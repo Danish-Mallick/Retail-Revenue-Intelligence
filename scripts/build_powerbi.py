@@ -1,4 +1,4 @@
-"""Generate 2-page portable Power BI Project (.pbip) with embedded aggregate CSVs.
+"""Generate 3-page portable Power BI Project (.pbip) with embedded aggregate CSVs.
 
 Trade-off: precomputed anonymized summary sources embedded as compressed CSV so
 Power BI Desktop can import offline; rerun this script to refresh after analysis.
@@ -14,6 +14,13 @@ def plat(kind):return {'$schema':P+'gitIntegration/platformProperties/2.0.0/sche
 # Publish only aggregate/anonymized stats, not the user's 384k transaction rows.
 sales=pd.read_csv(D/'monthly_country.csv');customers=pd.read_csv(D/'customer_metrics_anonymized.csv');co=pd.read_csv(D/'cohort_retention.csv')
 co=co[co.CohortIndex==1].loc[:,['FirstObservedMonth','CohortSize','RetainedCustomers','RetentionPct']].rename(columns={'FirstObservedMonth':'CohortMonth','CohortSize':'CustomersInCohort','RetainedCustomers':'CustomersNextMonth','RetentionPct':'NextMonthRetentionPct'})
+# One aggregate forecast in the PBIP; SKU detail remains in the standalone dashboard.
+forecast=pd.read_csv(D/'forecast_weekly_history.csv')[['WeekStart','All products']].rename(columns={'All products':'ObservedUnits'})
+hold=pd.read_csv(D/'forecast_holdout_weeks.csv').query('Series == "All products"')
+forecast=forecast.merge(hold[['WeekStart','ForecastUnits','BaselineUnits']],on='WeekStart',how='left')
+forecast['IsHoldout']=['Yes' if date in set(hold.WeekStart) else 'No' for date in forecast.WeekStart]
+sku_errors=pd.read_csv(D/'forecast_evaluation.csv').query('Series != "All products"')
+
 # Avoid implicit Python list syntax escaping in M. This file is fully portable
 # even without a local CSV; the user can regenerate from locally supplied data.
 def encoded(df):
@@ -22,7 +29,9 @@ def encoded(df):
 tables={
  'Sales':(sales,{'Month':'string','Country':'string','Revenue':'double','Orders':'int64','ActiveCustomers':'int64','Units':'int64','Year':'int64','FirstObservedMonthRevenue':'double','ReturningLaterMonthRevenue':'double','AOV':'double'}),
  'Customers':(customers,{'CustomerKey':'int64','Revenue':'double','Orders':'int64','FirstObservedMonth':'string','RecencyDays':'int64','Country':'string','Segment':'string'}),
- 'CohortMonth1':(co,{'CohortMonth':'string','CustomersInCohort':'int64','CustomersNextMonth':'int64','NextMonthRetentionPct':'double'})
+ 'CohortMonth1':(co,{'CohortMonth':'string','CustomersInCohort':'int64','CustomersNextMonth':'int64','NextMonthRetentionPct':'double'}),
+ 'ForecastAll':(forecast,{'WeekStart':'string','ObservedUnits':'int64','ForecastUnits':'double','BaselineUnits':'double','IsHoldout':'string'}),
+ 'ForecastSkuErrors':(sku_errors,{'Series':'string','Product':'string','SelectedMethod':'string','HoldoutWAPE':'double','BaselineHoldoutWAPE':'double','ActualTotal':'int64','ForecastTotal':'double','BaselineForecastTotal':'double'})
 }
 j(BASE/(NM+'.pbip'),{'$schema':P+'pbip/pbipProperties/1.0.0/schema.json','version':'1.0','artifacts':[{'report':{'path':NM+'.Report'}}],'settings':{'enableAutoRecovery':True}})
 j(RD/'.platform',plat('Report'));j(MD/'.platform',plat('SemanticModel'))
@@ -45,9 +54,18 @@ measures={
  'Champion Sales Share':'DIVIDE(CALCULATE(SUM(Customers[Revenue]),KEEPFILTERS(Customers[Segment] = "Champions")),SUM(Customers[Revenue]))',
  'Customer Sales':'SUM(Customers[Revenue])',
  },
- 'CohortMonth1':{'Next Month Cohort Retention':'DIVIDE(SUM(CohortMonth1[CustomersNextMonth]),SUM(CohortMonth1[CustomersInCohort]))'}
+ 'CohortMonth1':{'Next Month Cohort Retention':'DIVIDE(SUM(CohortMonth1[CustomersNextMonth]),SUM(CohortMonth1[CustomersInCohort]))'},
+ 'ForecastAll':{
+  'Weekly Observed Units':'SUM(ForecastAll[ObservedUnits])',
+  'Weekly Selected Forecast':'SUM(ForecastAll[ForecastUnits])',
+  'Weekly Baseline Forecast':'SUM(ForecastAll[BaselineUnits])',
+  'Actual Holdout Units':'CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes")',
+  'Selected Holdout Forecast':'SUM(ForecastAll[ForecastUnits])',
+  'Selected Holdout WAPE':'DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[ForecastUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))',
+  'Simple Holdout WAPE':'DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[BaselineUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))'},
+ 'ForecastSkuErrors':{'Selected SKU WAPE':'SUM(ForecastSkuErrors[HoldoutWAPE])'}
 }
-fmt=lambda label:'0.0%' if 'Share' in label or 'Retention' in label else ('£#,0.00' if 'Value' in label else ('£#,0' if 'Sales' in label else '#,0'))
+fmt=lambda label:'0.0%' if 'Share' in label or 'Retention' in label or ' WAPE' in label else ('£#,0.00' if 'Value' in label else ('£#,0' if 'Sales' in label else '#,0'))
 for name,(df,types) in tables.items():
  text='table '+name+'\n\tlineageTag: '+str(uuid.uuid4())+'\n\n'
  for k,t in types.items():
@@ -70,9 +88,9 @@ theme={'name':'RetailSignals','dataColors':[PA['teal'],PA['peach'],PA['blue'],PA
 j(BASE/'power_bi_theme.json',theme);j(RD/'StaticResources/SharedResources/BaseThemes/RetailSignals.json',theme)
 SC=P+'item/report/definition/';j(R/'version.json',{'$schema':SC+'versionMetadata/1.0.0/schema.json','version':'2.0.0'})
 j(R/'report.json',{'$schema':SC+'report/3.2.0/schema.json','themeCollection':{'baseTheme':{'name':'RetailSignals','reportVersionAtImport':{'visual':'2.6.0','report':'3.1.0','page':'2.3.0'},'type':'SharedResources'}},'resourcePackages':[{'name':'SharedResources','type':'SharedResources','items':[{'name':'RetailSignals','path':'BaseThemes/RetailSignals.json','type':'BaseTheme'}]}], 'settings':{'useStylableVisualContainerHeader':True,'exportDataMode':'AllowSummarized','defaultDrillFilterOtherVisuals':True}})
-ids=[gid('retail-page-'+s) for s in ['sales','customers']]
+ids=[gid('retail-page-'+s) for s in ['sales','customers','forecast']]
 j(R/'pages/pages.json',{'$schema':SC+'pagesMetadata/1.0.0/schema.json','pageOrder':ids,'activePageName':ids[0]})
-for pg,label in zip(ids,['Sales and Markets','Customers and Cohorts']):
+for pg,label in zip(ids,['Sales and Markets','Customers and Cohorts','Demand Forecasting']):
  page_obj = {
    '$schema':SC+'page/2.1.0/schema.json', 'name':pg,
    'displayName':label, 'displayOption':'FitToPage', 'width':1440, 'height':900,
@@ -97,8 +115,8 @@ def add(pg,key,typ,x,y,w,h,roles=None,txt=None,size='13pt',title=None,color=None
   v['visualContainerObjects']={'background':[{'properties':{'show':lit('true'),'color':solid(PA['panel']),'transparency':lit('0D')}}],'visualHeader':[{'properties':{'show':lit('false')}}]}
   if title:v['visualContainerObjects']['title']=[{'properties':{'show':lit('true'),'text':lit("'"+title.replace("'","''")+"'"),'fontColor':solid(PA['white'])}}]
  j(R/f'pages/{pg}/visuals/{vid}/visual.json',{'$schema':SC+'visualContainer/2.7.0/schema.json','name':vid,'position':{'x':x,'y':y,'width':w,'height':h,'z':1000+count,'tabOrder':1000+count},'visual':v})
-a,b=ids
-for pg,eyebrow,title,subtitle in [(a,'SALES INTELLIGENCE / 01','More orders, not bigger baskets','Recorded sales and invoices  ·  historical filtered extract  ·  assumed GBP'),(b,'CUSTOMER INTELLIGENCE / 02','Returning is not retention','Rule-based segments and first-observed monthly cohorts  ·  filtered extract')]:
+a,b,c=ids
+for pg,eyebrow,title,subtitle in [(a,'SALES INTELLIGENCE / 01','More orders, not bigger baskets','Recorded sales and invoices  ·  historical filtered extract  ·  assumed GBP'),(b,'CUSTOMER INTELLIGENCE / 02','Returning is not retention','Rule-based segments and first-observed monthly cohorts  ·  filtered extract'),(c,'DEMAND EXPERIMENT / 03','Can a simple forecast anticipate the surge?','Historical 4-week backtest   ·   positive sold units are not unconstrained demand')]:
  add(pg,'eyebrow','textbox',44,14,1100,28,txt=eyebrow,size='11pt',color=PA['teal'],title='x')
  add(pg,'title','textbox',44,54,1200,54,txt=title,size='30pt',title='x')
  add(pg,'subtitle','textbox',44,118,1270,35,txt=subtitle,size='11pt',color=PA['muted'])
@@ -119,15 +137,24 @@ add(b,'segchart','barChart',44,349,750,349,roles={'Category':[col('Customers','S
 add(b,'cochart','columnChart',818,349,572,349,roles={'Category':[col('CohortMonth1','CohortMonth')],'Y':[measure('CohortMonth1','Next Month Cohort Retention')]},title='Following-month retention by first-observed cohort')
 add(b,'seg_slicer','slicer',44,719,335,101,roles={'Values':[col('Customers','Country')]})
 add(b,'note','textbox',418,721,943,114,txt='Customer country uses the highest-spend market for eight cross-country customers. Cohort chart is full-extract and does NOT follow the country slicer. Group labels are descriptive, not churn predictions.',size='12pt',color=PA['muted'])
-readme='''# Power BI: open the editable 2-page PBIP
+# Forecasting page shows the complete historical weekly aggregate and the 4 final
+# held-out weeks. It intentionally makes no live or current-demand claim.
+for i,(label,met) in enumerate([('FINAL 4 WEEKS / ACTUAL','Actual Holdout Units'),('SELECTED FORECAST','Selected Holdout Forecast'),('SELECTED WAPE','Selected Holdout WAPE'),('SIMPLE BASELINE WAPE','Simple Holdout WAPE')]):
+ x=44+i*347
+ add(c,'flab'+str(i),'textbox',x,171,296,28,txt=label,size='10pt',title='x',color=PA['muted'])
+ add(c,'fkpi'+str(i),'cardVisual',x,208,308,98,roles={'Data':[measure('ForecastAll',met)]})
+add(c,'forecast_history','lineChart',44,348,930,351,roles={'Category':[col('ForecastAll','WeekStart')],'Y':[measure('ForecastAll','Weekly Observed Units'),measure('ForecastAll','Weekly Selected Forecast'),measure('ForecastAll','Weekly Baseline Forecast')]},title='Weekly sold units · historical and final holdout')
+add(c,'sku_error','barChart',995,349,398,350,roles={'Category':[col('ForecastSkuErrors','Series')],'Y':[measure('ForecastSkuErrors','Selected SKU WAPE')]},title='SKU forecast errors · holdout WAPE in %')
+add(c,'forecast_note','textbox',44,724,1330,104,txt='Forecasts were chosen with earlier rolling folds; final test is 7 Nov–4 Dec 2011. The model underpredicted late-autumn sales. Short historical sample, no stockout/promotions data and no out-of-sample live validation. Open report/forecast_experiment.html to compare models by product.',size='12pt',color=PA['muted'])
+readme='''# Power BI: open the editable 3-page PBIP
 
-Double-click **Retail_Revenue_Intelligence.pbip** with an up-to-date Power BI Desktop version supporting PBIP/TMDL. The project includes two pages: **Sales and Markets** and **Customers and Cohorts**.
+Double-click **Retail_Revenue_Intelligence.pbip** with an up-to-date Power BI Desktop version supporting PBIP/TMDL. The project includes three pages: **Sales and Markets**, **Customers and Cohorts**, and **Demand Forecasting**.
 
-This report imports *compressed, embedded* precomputed CSV snapshots. It needs no access to your raw third-party retail CSV and does not depend on your local file paths. The snapshots come from the actual Python analysis in `results/` (sales by month/country, anonymized customer metrics, first-following-month cohort summary).
+This report imports *compressed, embedded* precomputed CSV snapshots. It needs no access to your raw third-party retail CSV and does not depend on your local file paths. The snapshots come from the actual Python analysis in `results/` (sales by month/country, anonymized customer metrics, first-following-month cohort summary, and aggregate weekly forecast backtest). The forecasting page contains the *all-product* series; the separate forecast HTML explores five individual SKUs.
 
-**To refresh** after updating the user-supplied raw extract, run `python scripts/analyze.py --source 'data/raw/Online Retail.csv'` followed by `python scripts/build_powerbi.py`; reopen the PBIP. The snapshot tables are not live ETL connections. This is an editable Power BI project; I generated and structurally validated the definitions but did **not** open/verify them on Windows Power BI Desktop. In Desktop, verify visuals and filters before claiming it as an interactive deployed report or sharing screenshots.
+**To refresh** after updating the user-supplied raw extract, run `python scripts/analyze.py --source 'data/raw/Online Retail.csv'` then `python scripts/demand_forecast.py --source 'data/raw/Online Retail.csv'` and then `python scripts/build_powerbi.py`; reopen the PBIP. The snapshot tables are not live ETL connections. This is an editable Power BI project; I generated and structurally validated the definitions but did **not** open/verify them on Windows Power BI Desktop. In Desktop, verify visuals and filters before claiming it as an interactive deployed report or sharing screenshots.
 
-The customer page and cohort bar use separate precomputed tables. Customer country assigns the highest-sales country to the **eight cross-country customers**; the cohort chart is globally aggregated and unaffected by the customer-country slicer. Do not imply the slicer changes cohort retention. The source excludes cancellations and unknown customers, and excludes part of December 2011.
+The customer page and cohort bar use separate precomputed tables. Customer country assigns the highest-sales country to the **eight cross-country customers**; the cohort chart is globally aggregated and unaffected by the customer-country slicer. Do not imply the slicer changes cohort retention. The source excludes cancellations and unknown customers, and excludes part of December 2011. On the forecasting page, selected WAPE and baseline WAPE are evaluated on a historical held-out four-week test only; this is not a 2026 operational prediction, and observed sold units are not total customer demand.
 '''
 write(BASE/'OPEN_IN_DESKTOP.md',readme)
 print('PBIP generated:',len(list(R.rglob('visual.json'))),'visuals across',len(ids),'pages;',[(n,len(df)) for n,(df,types) in tables.items()])

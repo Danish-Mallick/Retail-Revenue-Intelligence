@@ -1,0 +1,73 @@
+table ForecastAll
+	lineageTag: 24a4d308-c6c5-4a18-bea4-bb4335578e42
+
+	column WeekStart
+		dataType: string
+		lineageTag: 0f69dad0-255d-4378-bfa7-55016ec6faf0
+		summarizeBy: none
+		sourceColumn: WeekStart
+
+	column ObservedUnits
+		dataType: int64
+		lineageTag: 03d4892c-6224-4e03-9def-935f6a1330ae
+		summarizeBy: sum
+		sourceColumn: ObservedUnits
+
+	column ForecastUnits
+		dataType: double
+		lineageTag: a2e5db26-f73f-4317-841c-f69fc555849e
+		summarizeBy: sum
+		sourceColumn: ForecastUnits
+
+	column BaselineUnits
+		dataType: double
+		lineageTag: a33d52e5-793c-4171-bdd9-f62b01d62337
+		summarizeBy: sum
+		sourceColumn: BaselineUnits
+
+	column IsHoldout
+		dataType: string
+		lineageTag: d0ed0752-3e78-4c94-a913-539cac855f36
+		summarizeBy: none
+		sourceColumn: IsHoldout
+
+	measure 'Weekly Observed Units' = SUM(ForecastAll[ObservedUnits])
+		lineageTag: f7d71743-dc3c-4740-8bda-1e95d9bb2ab9
+		formatString: #,0
+
+	measure 'Weekly Selected Forecast' = SUM(ForecastAll[ForecastUnits])
+		lineageTag: 2bfd06bb-c666-4694-80f7-489456e38d78
+		formatString: #,0
+
+	measure 'Weekly Baseline Forecast' = SUM(ForecastAll[BaselineUnits])
+		lineageTag: 55b5c835-4122-452d-a8cc-137849a60e0b
+		formatString: #,0
+
+	measure 'Actual Holdout Units' = CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes")
+		lineageTag: bcf63eee-7644-4dd4-8775-5e78fbaf9600
+		formatString: #,0
+
+	measure 'Selected Holdout Forecast' = SUM(ForecastAll[ForecastUnits])
+		lineageTag: 5c50d689-80fe-4cf3-9f4a-7fa80d610154
+		formatString: #,0
+
+	measure 'Selected Holdout WAPE' = DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[ForecastUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))
+		lineageTag: b0991586-c83c-44a5-aca4-8dbec85dd028
+		formatString: 0.0%
+
+	measure 'Simple Holdout WAPE' = DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[BaselineUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))
+		lineageTag: ff21378e-fef4-43f3-a375-d9a5856a9b84
+		formatString: 0.0%
+
+	partition ForecastAll = m
+		mode: import
+		source =
+				let
+				    Contents = Binary.Decompress(Binary.FromText("H4sIAAAAAAAC/3WUP2scQQzF+3wW3aG/I6lNYZImKUIIKS/xFibGB7eXfP5oznBYA162mR8PzT7paX9s259v19PlCl9/7dvl3/b4/eXpusPD+bL9Pu3X19PH0749P71sr6fP+6fz8+P57/UDI+GB+IADRj0OAF/Od0oCg1WyU0agwYMW6oB3QgesV0A1gjslBAmzXKiDDFPtlBXUxpubblSoKnjEW1oOHDiQs1OqCkyOnTKBpqgvNEpr2m6TWVcZMzuddd1l0c66EckLDTAOa1TrBR0e2ikRmDvaQmM6HtIpGwi7tW+wMgJWhleaMIjSO6WaelJYpzznppGdSs3NU5qLMXNjdZl0Wmer2HinlRtNw1zonDxSq+u37oRRdjq7g4K60IBhoqPT6o6lSUtJVHzAgnAstCYf5N4pzQrRMxkH5tqJGCtNUCFst2W1DZyIsNPy6jJoLDQhnWLR8oBwbomqdavNSrY2obmECFGGcaEOEd56VrQ2K8laz4pWnjOkzeLWTCgTs+3JGHysOSZm2NEQfm77XVc7QVTJmTpPO9I7utoSQraiFSeLo76ni9KhR5mV+mEcx6L7D9QRLt/6BAAA", BinaryEncoding.Base64), Compression.GZip),
+				    CSV = Csv.Document(Contents,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(CSV,[PromoteAllScalars=true]),
+				    Typed = Table.TransformColumnTypes(Headers, {{"WeekStart", type text},{"ObservedUnits", Int64.Type},{"ForecastUnits", type number},{"BaselineUnits", type number},{"IsHoldout", type text}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

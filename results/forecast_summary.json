@@ -1,0 +1,82 @@
+{
+  "description": "Historical four-week forecasting experiment using positive recorded units, not total true demand",
+  "first_full_week": "2010-12-06",
+  "last_full_week": "2011-11-28",
+  "excluded": "2010-11-29 (partial first week); 2011-12-05 (partial final week)",
+  "observed_zero_week": "2010-12-27 (no observed transactions; assumed zero observed units, not proof of zero true demand)",
+  "model_selection_end": "2011-10-16",
+  "final_holdout": "2011-11-07 through 2011-12-04 (four complete weeks)",
+  "gap": "Oct 17 to Nov 6 left out of tuning, included in final model training",
+  "forecast_horizon_weeks": 4,
+  "sku_selection": "top five by distinct invoices during initial weeks ending 2011-05-29; >=17 active weeks",
+  "sku_list": [
+    "85123A",
+    "22423",
+    "47566",
+    "84879",
+    "85099B"
+  ],
+  "results": [
+    {
+      "Series": "All products",
+      "Product": "All product units",
+      "SelectedMethod": "eight_week_damped_trend",
+      "HoldoutWAPE": 13.37,
+      "BaselineHoldoutWAPE": 15.18,
+      "ActualTotal": 429081,
+      "ForecastTotal": 371695.3,
+      "BaselineForecastTotal": 363942.0
+    },
+    {
+      "Series": "85123A",
+      "Product": "WHITE HANGING HEART T-LIGHT HOLDER",
+      "SelectedMethod": "four_week_mean",
+      "HoldoutWAPE": 23.32,
+      "BaselineHoldoutWAPE": 23.32,
+      "ActualTotal": 1638,
+      "ForecastTotal": 1256.0,
+      "BaselineForecastTotal": 1256.0
+    },
+    {
+      "Series": "22423",
+      "Product": "REGENCY CAKESTAND 3 TIER",
+      "SelectedMethod": "eight_week_damped_trend",
+      "HoldoutWAPE": 24.83,
+      "BaselineHoldoutWAPE": 24.77,
+      "ActualTotal": 646,
+      "ForecastTotal": 721.0,
+      "BaselineForecastTotal": 720.0
+    },
+    {
+      "Series": "47566",
+      "Product": "PARTY BUNTING",
+      "SelectedMethod": "four_week_mean",
+      "HoldoutWAPE": 29.74,
+      "BaselineHoldoutWAPE": 29.74,
+      "ActualTotal": 417,
+      "ForecastTotal": 302.0,
+      "BaselineForecastTotal": 302.0
+    },
+    {
+      "Series": "84879",
+      "Product": "ASSORTED COLOUR BIRD ORNAMENT",
+      "SelectedMethod": "four_week_mean",
+      "HoldoutWAPE": 18.71,
+      "BaselineHoldoutWAPE": 18.71,
+      "ActualTotal": 2512,
+      "ForecastTotal": 2042.0,
+      "BaselineForecastTotal": 2042.0
+    },
+    {
+      "Series": "85099B",
+      "Product": "JUMBO BAG RED RETROSPOT",
+      "SelectedMethod": "four_week_mean",
+      "HoldoutWAPE": 27.56,
+      "BaselineHoldoutWAPE": 27.56,
+      "ActualTotal": 1716,
+      "ForecastTotal": 1282.0,
+      "BaselineForecastTotal": 1282.0
+    }
+  ],
+  "caveat": "One historical year, changing sales levels, unknown stockouts and promotions; validation is illustrative, not production-grade."
+}

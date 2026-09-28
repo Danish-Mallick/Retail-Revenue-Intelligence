@@ -6,7 +6,7 @@
 
 **SQL · Python · Power BI** &nbsp; | &nbsp; **384,721 recorded line items** &nbsp; | &nbsp; **Dec 2010 – 9 Dec 2011**
 
-[Explore the interactive dashboard](report/interactive_dashboard.html) · [Read the four-page field report](report/executive_field_report.pdf) · [Open the executed notebook](notebooks/retail_investigation.ipynb) · [Inspect the SQL](sql/) · [Open the Power BI setup guide](powerbi/OPEN_IN_DESKTOP.md)
+[Explore the sales/customer dashboard](report/interactive_dashboard.html) · [Explore the forecasting dashboard](report/forecast_experiment.html) · [Read the four-page field report](report/executive_field_report.pdf) · [Open the executed notebook](notebooks/retail_investigation.ipynb) · [Inspect the SQL](sql/) · [Open the Power BI setup guide](powerbi/OPEN_IN_DESKTOP.md)
 
 ## Where I started
 
@@ -67,21 +67,38 @@ I also checked product revenue against units sold. These are different rankings;
 
 ![Products by recorded sales](charts/06_products.png)
 
+## 05 / Could I have forecast the surge instead of explaining it afterwards?
+
+The earlier charts showed a late-autumn increase, but I wanted to know whether that increase would have been visible **before** it happened. Forecasting revenue would mix order quantities with changing prices, so I changed the target to **weekly observed sold units**, both across all products and for five frequently purchased products. This distinction matters: this filtered dataset records what was sold, not customers' unmet demand when something was out of stock.
+
+![Four-week out-of-time forecast test](charts/07_demand_forecast_backtest.png)
+
+I did not jump directly to a complicated machine-learning model. There is only about one year of usable weekly history, with no inventory, promotions or reliable annual seasonality. I compared three reproducible approaches: a trailing four-week average, repeating the previous four weeks and a damped eight-week trend. I chose the method **before** looking at November, using five non-overlapping four-week rolling validation periods ending in mid-October. I also selected the five product codes from the early historical period so the future bestsellers couldn't choose themselves.
+
+Then I left **7 November to 4 December 2011** untouched as a final four-week test. For total units, the selected damped trend predicted **371,695** against **429,081** actually recorded: **13.4% holdout WAPE**, versus **15.2%** for the basic four-week mean. That is only a modest improvement. The forecast still **underestimated the late-autumn increase**, which is more informative than presenting it as a successful prediction.
+
+![SKU-level holdout error comparisons](charts/08_sku_forecast_validation.png)
+
+The result wasn't consistent across products. Most selected the simple average during validation, and the selected trend model for the cake stand was slightly *worse* than the simple average on the final test. A single aggregate improvement would have hidden this. [The standalone forecast view](report/forecast_experiment.html) lets you switch between the aggregate and all five products. The [executed forecast notebook](notebooks/retail_demand_forecasting.ipynb), [forecast script](scripts/demand_forecast.py) and [rolling validation outputs](results/forecast_validation_folds.csv) show how I kept the test out of model selection.
+
+This is a **historical forecasting experiment**, not a current retail prediction or a deployment-ready stock replenishment model. The data do not show stockouts, unmet demand, returns, advertising campaigns or a second complete holiday season. With more history and stock-availability information, I would repeat the evaluation before considering a more complex model.
+
 ## What I would investigate next
 
 I'd like to understand *which groups* contributed to the September–November order increase. The appropriate follow-up is a customer-month decomposition, preferably checking changes in product mix along the way. That's a better next question than extrapolating a full year's growth rate from this filtered, historical file.
 
-I would also want return/cancellation data and a verified original currency field before presenting profitability or net-sales conclusions. Those variables aren't available here.
+I'd also want inventory availability and a promotion calendar before trusting a forecast for purchasing decisions, alongside return/cancellation data and a verified currency field before presenting profitability or net-sales conclusions. Those variables aren't available here.
 
 ## Explore the work
 
 | If you want to... | Start here |
 |:--|:--|
+| Explore the forecast versus the untouched test weeks | [Historical demand forecasting dashboard](report/forecast_experiment.html) · [Forecast notebook](notebooks/retail_demand_forecasting.ipynb) |
 | See the main story and switch markets/time windows | [Interactive standalone dashboard](report/interactive_dashboard.html) — no server or CDN required |
 | Read the findings and data-quality decisions | [Four-page report](report/executive_field_report.pdf) |
 | Follow the reasoning and rerun the analysis | [Executed Python notebook](notebooks/retail_investigation.ipynb), then [`scripts/analyze.py`](scripts/analyze.py) |
 | Reproduce the SQL investigations | [PostgreSQL schema and date correction](sql/00_schema_and_date_repair.sql) · [SQL setup](sql/POSTGRES_SETUP.md) |
-| Explore an editable two-page Power BI file | [Power BI project](powerbi/Retail_Revenue_Intelligence.pbip) · [opening notes](powerbi/OPEN_IN_DESKTOP.md) |
+| Explore an editable two-page Power BI file | [Three-page Power BI project](powerbi/Retail_Revenue_Intelligence.pbip) · [opening notes](powerbi/OPEN_IN_DESKTOP.md) |
 | Inspect the evidence behind the visuals | [Verified aggregate CSV results](results/) · [validation tests](tests/) |
 
 ### Reproducing the numbers
@@ -96,6 +113,9 @@ With that exact file saved as `data/raw/Online Retail.csv` and the required Pyth
 pip install -r requirements.txt
 python scripts/analyze.py --source 'data/raw/Online Retail.csv'
 python scripts/plot_results.py
+python scripts/demand_forecast.py --source 'data/raw/Online Retail.csv'
+python scripts/plot_forecast.py
+python scripts/build_forecast_dashboard.py
 python scripts/build_featured_images.py
 python scripts/build_dashboard.py
 python scripts/build_report.py
@@ -103,12 +123,13 @@ python scripts/build_powerbi.py
 python -m unittest discover -s tests -v
 ```
 
-The notebook and interactive HTML dashboard also open with **the already verified summary outputs**, even if you don't have the source file. The Power BI PBIP uses embedded precomputed aggregate snapshots, so it can be opened offline; rerun the builder to refresh those after recomputing the analysis. **The PBIP was generated and structurally checked, but not opened or rendered in Windows Power BI Desktop.** The cover images are clearly labeled as previews, not evidence of deployed Power BI.
+The notebooks and both interactive HTML dashboards also open with **the already verified summary outputs**, even if you don't have the source file. The three-page Power BI PBIP uses embedded precomputed aggregate snapshots, so it can be opened offline; rerun the builder to refresh those after recomputing the analysis. **The PBIP was generated and structurally checked, but not opened or rendered in Windows Power BI Desktop.** The cover images are clearly labeled as previews, not evidence of deployed Power BI.
 
 ### Boundaries worth keeping on the page
 
 - **Sample:** user-provided filtered extract of positive-quantity/positive-price transactions with customer IDs; *not* the original unfiltered UCI workbook and not representative of an entire customer base. It excludes records needed for a cancellation or return-rate analysis.
 - **Currency:** labeled **GBP as an explicit source-context assumption**. The provided CSV itself contains no currency column.
+- **Forecast boundaries:** the historical four-week November/December test is entirely out-of-time. Observed units sold are not true unconstrained demand; the filtered source lacks stock availability and multiple seasonal years. Product selection and model choice rely only on earlier observations.
 - **Customer history:** 'first observed' and end-of-window segments are limited to the available time period. Eight cross-country customers are assigned to their highest-sales country in the customer-level Power BI summary; the invoice-country sales summaries use each invoice's country.
 - **External reference:** the [UCI Online Retail dataset](https://archive.ics.uci.edu/dataset/352/online+retail) is related, but it is **not guaranteed to reproduce this uploaded derivative**. See [source and reuse notes](data/SOURCE_AND_SCOPE.md) before replacing or redistributing the original data.
 

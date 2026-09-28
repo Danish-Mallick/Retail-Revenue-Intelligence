@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "8b380c37c3f5b345e9d6",
+  "position": {
+    "x": 44,
+    "y": 54,
+    "width": 1200,
+    "height": 54,
+    "z": 1008,
+    "tabOrder": 1008
+  },
+  "visual": {
+    "visualType": "textbox",
+    "drillFilterOtherVisuals": false,
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Can a simple forecast anticipate the surge?",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "30pt",
+                      "fontWeight": "bold",
+                      "color": "#F8FBFD"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "left"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

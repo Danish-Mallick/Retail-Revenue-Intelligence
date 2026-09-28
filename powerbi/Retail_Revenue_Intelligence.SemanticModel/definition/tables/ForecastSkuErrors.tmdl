@@ -1,0 +1,67 @@
+table ForecastSkuErrors
+	lineageTag: dd87069d-11c9-4ac4-a198-1adeb76fa7e5
+
+	column Series
+		dataType: string
+		lineageTag: b763ab32-7d2a-4316-8cc8-1e02dc5fcc82
+		summarizeBy: none
+		sourceColumn: Series
+
+	column Product
+		dataType: string
+		lineageTag: 32db8f7b-9b00-438a-8d0d-19f8885266e2
+		summarizeBy: none
+		sourceColumn: Product
+
+	column SelectedMethod
+		dataType: string
+		lineageTag: 325a62b8-6e3b-4784-8443-12adc363a01f
+		summarizeBy: none
+		sourceColumn: SelectedMethod
+
+	column HoldoutWAPE
+		dataType: double
+		lineageTag: 919482c3-952a-4db5-a28c-5c7cbd1110a6
+		summarizeBy: sum
+		sourceColumn: HoldoutWAPE
+
+	column BaselineHoldoutWAPE
+		dataType: double
+		lineageTag: 294260d2-6de1-44e9-923e-d981cc9eb949
+		summarizeBy: sum
+		sourceColumn: BaselineHoldoutWAPE
+
+	column ActualTotal
+		dataType: int64
+		lineageTag: d3a5e196-3239-4b46-80f8-fc5092ad2b38
+		summarizeBy: sum
+		sourceColumn: ActualTotal
+
+	column ForecastTotal
+		dataType: double
+		lineageTag: e6ff3011-800c-4fef-862e-8cbb67dbfd2f
+		summarizeBy: sum
+		sourceColumn: ForecastTotal
+
+	column BaselineForecastTotal
+		dataType: double
+		lineageTag: f07e844d-71a7-4e14-8824-2cfa71d31173
+		summarizeBy: sum
+		sourceColumn: BaselineForecastTotal
+
+	measure 'Selected SKU WAPE' = SUM(ForecastSkuErrors[HoldoutWAPE])
+		lineageTag: ad7684d1-f884-4bee-af8c-f4c9041b00f8
+		formatString: 0.0%
+
+	partition ForecastSkuErrors = m
+		mode: import
+		source =
+				let
+				    Contents = Binary.Decompress(Binary.FromText("H4sIAAAAAAAC/2WQ0WqDMBiF7/sUeYB/YhI1ehlrpm6tSkwpvSqi2Vpm67CRvf50WtjWm++Qn/BxOKXuz/oGRd81Q22g1K2ujW622py6BpKubbrB7HkhIKxuuj1f9e8br81QtaozVQvPXa/r6mbm1/33n+vKdzGhHPZJqgRKeBanWYwSwaVC6mmTxolCSb6JhIS3buiPX1p/HC+6ugKhFiULsUd9wMT1LNu+54oQh1CQIhbZ+oDW/FWUimcRokilo06f309m9jXV5VM3R9PrawPEsXw6kTHwHA8YwZOVEXuSOsz1PCjGegcU7jI1tn0oFljMWehgBtQmk2COle/4LABelrlUIkLrfJPvJApTGaFcZnwrMvVfiH2L4YVknAuI7fwolxw3tIMghJfdNsxRyGMkR7MUSuZlkT/oCLNcbyFmeATxyTzcT66+ARtI8JwBAgAA", BinaryEncoding.Base64), Compression.GZip),
+				    CSV = Csv.Document(Contents,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(CSV,[PromoteAllScalars=true]),
+				    Typed = Table.TransformColumnTypes(Headers, {{"Series", type text},{"Product", type text},{"SelectedMethod", type text},{"HoldoutWAPE", type number},{"BaselineHoldoutWAPE", type number},{"ActualTotal", Int64.Type},{"ForecastTotal", type number},{"BaselineForecastTotal", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

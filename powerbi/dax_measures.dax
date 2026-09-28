@@ -30,3 +30,27 @@ Customer Sales = SUM(Customers[Revenue])
 
 -- CohortMonth1 / Next Month Cohort Retention
 Next Month Cohort Retention = DIVIDE(SUM(CohortMonth1[CustomersNextMonth]),SUM(CohortMonth1[CustomersInCohort]))
+
+-- ForecastAll / Weekly Observed Units
+Weekly Observed Units = SUM(ForecastAll[ObservedUnits])
+
+-- ForecastAll / Weekly Selected Forecast
+Weekly Selected Forecast = SUM(ForecastAll[ForecastUnits])
+
+-- ForecastAll / Weekly Baseline Forecast
+Weekly Baseline Forecast = SUM(ForecastAll[BaselineUnits])
+
+-- ForecastAll / Actual Holdout Units
+Actual Holdout Units = CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes")
+
+-- ForecastAll / Selected Holdout Forecast
+Selected Holdout Forecast = SUM(ForecastAll[ForecastUnits])
+
+-- ForecastAll / Selected Holdout WAPE
+Selected Holdout WAPE = DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[ForecastUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))
+
+-- ForecastAll / Simple Holdout WAPE
+Simple Holdout WAPE = DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[BaselineUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))
+
+-- ForecastSkuErrors / Selected SKU WAPE
+Selected SKU WAPE = SUM(ForecastSkuErrors[HoldoutWAPE])

@@ -6,5 +6,7 @@ model Model
 ref table Sales
 ref table Customers
 ref table CohortMonth1
+ref table ForecastAll
+ref table ForecastSkuErrors
 
 annotation __PBI_TimeIntelligenceEnabled = 0

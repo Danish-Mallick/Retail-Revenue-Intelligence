@@ -20,3 +20,9 @@ To reproduce the exact output, place that exact version at `data/raw/Online Reta
 - **Geographic caveat:** eight customers purchased in more than one country. Their country in the anonymized customer table is the one associated with their highest recorded spend, for one row per customer; the month/country revenue table is invoice-country based, with no such assignment.
 
 Data and code generated as a portfolio case study. Credit and verify rights for the user-supplied original before redistributing raw or row-level derived transactions.
+
+## Demand forecasting add-on
+
+The new forecast uses **positive observed units sold**, not unconstrained consumer demand. Inventory availability, promotions and lost sales are absent. The date repair from the primary analysis applies before weekly aggregation. Calendar week starts Monday; first/last incomplete weeks are excluded. The 2010-12-27 calendar week has no transactions and is represented as **zero observed units**, not proven zero consumer interest.
+
+Five high-activity SKUs were chosen only using the initial period before 30 May 2011. Five separate, non-overlapping four-week expanding-origin validation windows ended before 17 October 2011; their WAPE decided among three simple fixed methods per series. The final four-week test (7 Nov to 4 Dec) was not used in model selection. October 17 to November 6 was available as history when retraining for the final test, but not used to select methods. The test numbers in the README are empirical historical results, not a current forecast. Five SKUs are illustrative rather than an exhaustive portfolio-level demand plan. More than one annual cycle, stock availability and promotion data would be needed before making inventory decisions.

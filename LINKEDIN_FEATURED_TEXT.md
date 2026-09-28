@@ -16,3 +16,9 @@ The next step was customer behaviour. I separated the retrospective contribution
 **Suggested LinkedIn skills:** SQL · PostgreSQL · Python · pandas · Power BI · DAX · Data Visualization · Cohort Analysis · Customer Segmentation · Data Cleaning
 
 **Do not claim:** deployed Power BI report, predictive churn model, return/cancellation analysis, actual profit or unverified original dataset ownership. Review and run the actual work before publishing it as your own portfolio project.
+
+### Optional forecasting add-on for a second Featured image
+
+I added a forecasting experiment after finishing the revenue and customer analysis. I tested whether weekly recorded units could have predicted the late-autumn surge, using five earlier rolling windows to select among simple methods before evaluating an untouched four-week November–December 2011 period. The selected aggregate method recorded 13.4% historical WAPE versus 15.2% for a trailing-average baseline, but both underestimated the seasonal rise. SKU-level results were mixed. This is an honest historical backtest using sales as a proxy for demand, not a live demand-forecasting system.
+
+Artwork: `charts/07_demand_forecast_backtest.png`

@@ -1,0 +1,161 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "544b7400d9d6d80c5695",
+  "position": {
+    "x": 44,
+    "y": 348,
+    "width": 930,
+    "height": 351,
+    "z": 1043,
+    "tabOrder": 1043
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "drillFilterOtherVisuals": true,
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ForecastAll"
+                    }
+                  },
+                  "Property": "WeekStart"
+                }
+              },
+              "queryRef": "ForecastAll.WeekStart",
+              "nativeQueryRef": "WeekStart"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ForecastAll"
+                    }
+                  },
+                  "Property": "Weekly Observed Units"
+                }
+              },
+              "queryRef": "ForecastAll.Weekly Observed Units",
+              "nativeQueryRef": "Weekly Observed Units"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ForecastAll"
+                    }
+                  },
+                  "Property": "Weekly Selected Forecast"
+                }
+              },
+              "queryRef": "ForecastAll.Weekly Selected Forecast",
+              "nativeQueryRef": "Weekly Selected Forecast"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ForecastAll"
+                    }
+                  },
+                  "Property": "Weekly Baseline Forecast"
+                }
+              },
+              "queryRef": "ForecastAll.Weekly Baseline Forecast",
+              "nativeQueryRef": "Weekly Baseline Forecast"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#192A40'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Weekly sold units · historical and final holdout'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F8FBFD'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+Series,Product,SelectedMethod,HoldoutWAPE,BaselineHoldoutWAPE,ActualTotal,ForecastTotal,BaselineForecastTotal
+All products,All product units,eight_week_damped_trend,13.37,15.18,429081,371695.3,363942.0
+85123A,WHITE HANGING HEART T-LIGHT HOLDER,four_week_mean,23.32,23.32,1638,1256.0,1256.0
+22423,REGENCY CAKESTAND 3 TIER,eight_week_damped_trend,24.83,24.77,646,721.0,720.0
+47566,PARTY BUNTING,four_week_mean,29.74,29.74,417,302.0,302.0
+84879,ASSORTED COLOUR BIRD ORNAMENT,four_week_mean,18.71,18.71,2512,2042.0,2042.0
+85099B,JUMBO BAG RED RETROSPOT,four_week_mean,27.56,27.56,1716,1282.0,1282.0

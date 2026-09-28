@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "3c357ba8303a33dad065",
+  "position": {
+    "x": 44,
+    "y": 724,
+    "width": 1330,
+    "height": 104,
+    "z": 1045,
+    "tabOrder": 1045
+  },
+  "visual": {
+    "visualType": "textbox",
+    "drillFilterOtherVisuals": false,
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Forecasts were chosen with earlier rolling folds; final test is 7 Nov–4 Dec 2011. The model underpredicted late-autumn sales. Short historical sample, no stockout/promotions data and no out-of-sample live validation. Open report/forecast_experiment.html to compare models by product.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "fontWeight": "normal",
+                      "color": "#AABFD0"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "left"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
