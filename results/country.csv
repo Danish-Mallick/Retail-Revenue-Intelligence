@@ -1,0 +1,38 @@
+Country,Revenue,Orders,Customers,SharePct
+United Kingdom,5119920.02,15878,3848,84.40
+Germany,185184.67,438,93,3.05
+EIRE,169065.67,251,3,2.79
+France,158394.02,371,87,2.61
+Netherlands,62691.52,77,8,1.03
+Switzerland,45592.01,44,21,0.75
+Spain,42438.49,85,30,0.70
+Australia,36307.99,47,9,0.60
+Belgium,35591.34,97,25,0.59
+Norway,28607.44,32,10,0.47
+Portugal,26007.03,49,19,0.43
+Channel Islands,17164.89,23,8,0.28
+Denmark,15516.94,18,9,0.26
+Italy,15220.24,35,14,0.25
+Japan,14729.05,13,7,0.24
+Finland,14263.52,36,12,0.24
+Cyprus,12395.89,14,8,0.20
+Sweden,8577.81,31,8,0.14
+Singapore,8088.53,4,1,0.13
+Austria,7947.80,17,11,0.13
+Poland,6898.33,19,6,0.11
+Israel,6610.41,5,3,0.11
+Greece,4425.52,5,4,0.07
+Iceland,4060.40,7,1,0.07
+USA,3486.79,5,4,0.06
+Unspecified,2667.07,8,4,0.04
+Canada,2520.72,4,3,0.04
+Malta,2070.59,5,2,0.03
+United Arab Emirates,1756.78,2,2,0.03
+Lebanon,1693.88,1,1,0.03
+Lithuania,1661.06,4,1,0.03
+European Community,1159.25,3,1,0.02
+Brazil,1143.60,1,1,0.02
+RSA,1002.31,1,1,0.02
+Czech Republic,744.98,2,1,0.01
+Bahrain,353.40,2,2,0.01
+Saudi Arabia,145.92,1,1,0.00

@@ -1,0 +1,7 @@
+Segment,Customers,Revenue,AvgOrders,AvgRecency,RevenueSharePct
+Champions,752,3322529.34,12.16,11.51,54.77
+Developing,1001,719655.06,2.01,57.65,11.86
+Recent buyers,840,652185.83,2.42,15.82,10.75
+Loyal active,250,640221.43,7.47,50.16,10.55
+Dormant (rule-based),1153,438256.31,1.27,227.50,7.22
+At risk (rule-based),265,293257.91,4.21,159.62,4.83

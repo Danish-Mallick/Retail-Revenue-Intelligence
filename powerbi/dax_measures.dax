@@ -1,0 +1,32 @@
+-- Sales / Recorded Sales
+Recorded Sales = SUM(Sales[Revenue])
+
+-- Sales / Invoices
+Invoices = SUM(Sales[Orders])
+
+-- Sales / Average Order Value
+Average Order Value = DIVIDE([Recorded Sales], [Invoices])
+
+-- Sales / Later Month Buyer Sales
+Later Month Buyer Sales = SUM(Sales[ReturningLaterMonthRevenue])
+
+-- Sales / Later Month Buyer Share
+Later Month Buyer Share = DIVIDE([Later Month Buyer Sales], [Recorded Sales])
+
+-- Customers / Customer Count
+Customer Count = COUNTROWS(Customers)
+
+-- Customers / Multiple Order Buyers
+Multiple Order Buyers = CALCULATE([Customer Count], KEEPFILTERS(Customers[Orders] >= 2))
+
+-- Customers / Multi Order Buyer Sales Share
+Multi Order Buyer Sales Share = DIVIDE(CALCULATE(SUM(Customers[Revenue]), KEEPFILTERS(Customers[Orders] >= 2)),SUM(Customers[Revenue]))
+
+-- Customers / Champion Sales Share
+Champion Sales Share = DIVIDE(CALCULATE(SUM(Customers[Revenue]),KEEPFILTERS(Customers[Segment] = "Champions")),SUM(Customers[Revenue]))
+
+-- Customers / Customer Sales
+Customer Sales = SUM(Customers[Revenue])
+
+-- CohortMonth1 / Next Month Cohort Retention
+Next Month Cohort Retention = DIVIDE(SUM(CohortMonth1[CustomersNextMonth]),SUM(CohortMonth1[CustomersInCohort]))

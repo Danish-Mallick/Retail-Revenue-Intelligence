@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "14d54567b5d628eafa40",
+  "position": {
+    "x": 44,
+    "y": 54,
+    "width": 1200,
+    "height": 54,
+    "z": 1002,
+    "tabOrder": 1002
+  },
+  "visual": {
+    "visualType": "textbox",
+    "drillFilterOtherVisuals": false,
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "More orders, not bigger baskets",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "30pt",
+                      "fontWeight": "bold",
+                      "color": "#F8FBFD"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "left"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

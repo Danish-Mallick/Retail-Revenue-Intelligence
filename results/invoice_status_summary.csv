@@ -1,0 +1,26 @@
+Month,CustomerStatus,Revenue,Orders
+2010-12,First observed month,413866.43,1333
+2011-01,First observed month,166140.78,458
+2011-01,Returning (later month),173826.95,487
+2011-02,First observed month,138751.47,404
+2011-02,Returning (later month),179920.52,544
+2011-03,First observed month,180669.43,495
+2011-03,Returning (later month),242586.00,765
+2011-04,First observed month,109540.48,329
+2011-04,Returning (later month),233400.38,750
+2011-05,First observed month,102858.22,315
+2011-05,Returning (later month),380806.96,1162
+2011-06,First observed month,80515.12,258
+2011-06,Returning (later month),336516.48,1072
+2011-07,First observed month,65230.73,216
+2011-07,Returning (later month),345450.02,1052
+2011-08,First observed month,71627.42,179
+2011-08,Returning (later month),357206.46,1023
+2011-09,First observed month,130103.92,329
+2011-09,Returning (later month),527302.08,1340
+2011-10,First observed month,149751.83,418
+2011-10,Returning (later month),556935.78,1407
+2011-11,First observed month,120248.31,386
+2011-11,Returning (later month),761022.56,2167
+2011-12,First observed month,9551.46,40
+2011-12,Returning (later month),232276.09,706

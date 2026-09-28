@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Retail Revenue Intelligence"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "e8c20d65-0ae4-4436-9291-8ae84f7029fd"
+  }
+}

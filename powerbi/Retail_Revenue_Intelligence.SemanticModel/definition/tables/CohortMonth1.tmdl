@@ -1,0 +1,43 @@
+table CohortMonth1
+	lineageTag: 5a8419db-066b-4f71-b515-9c3783b4f9ca
+
+	column CohortMonth
+		dataType: string
+		lineageTag: c80d27ff-7ebd-466f-a737-5fcde7ca8b8e
+		summarizeBy: none
+		sourceColumn: CohortMonth
+
+	column CustomersInCohort
+		dataType: int64
+		lineageTag: 5df48b4c-7f15-485f-8a6c-f0a015d03371
+		summarizeBy: none
+		sourceColumn: CustomersInCohort
+
+	column CustomersNextMonth
+		dataType: int64
+		lineageTag: 07c8083f-1947-4fd7-aea4-82897fa75d1a
+		summarizeBy: none
+		sourceColumn: CustomersNextMonth
+
+	column NextMonthRetentionPct
+		dataType: double
+		lineageTag: e61452bf-f276-49bd-a2ac-9aba6f9ae9cf
+		summarizeBy: sum
+		sourceColumn: NextMonthRetentionPct
+
+	measure 'Next Month Cohort Retention' = DIVIDE(SUM(CohortMonth1[CustomersNextMonth]),SUM(CohortMonth1[CustomersInCohort]))
+		lineageTag: ad8ff657-ed01-48ee-b338-a5f90a921184
+		formatString: 0.0%
+
+	partition CohortMonth1 = m
+		mode: import
+		source =
+				let
+				    Contents = Binary.Decompress(Binary.FromText("H4sIAAAAAAAC/0WPQW5DMQhE9znLBAG2sb3+qy5aRb1C9aV00W8pcaUcvziy0x08hhnY2rXd+ns7+hXb7723n/12fzu2J/4nH/tjil7V5973o3+34/LVT8rCZ1GUlBGEEYwkDypnFkSuKBkqpAuqSwrMIJlqmDAgJnnCSLZghNYIC2M9LpiguSIZlImXp3chedjwZJ0wQ6ogKMQopwmLd+aHQgrZWq8eZMjsLmRTOV7xl8bxkcJUivtJ8QFEiOX0B5Oq8vZEAQAA", BinaryEncoding.Base64), Compression.GZip),
+				    CSV = Csv.Document(Contents,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(CSV,[PromoteAllScalars=true]),
+				    Typed = Table.TransformColumnTypes(Headers, {{"CohortMonth", type text},{"CustomersInCohort", Int64.Type},{"CustomersNextMonth", Int64.Type},{"NextMonthRetentionPct", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

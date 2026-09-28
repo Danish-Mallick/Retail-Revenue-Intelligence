@@ -1,0 +1,8 @@
+ANALYSIS AND ARTIFACT VALIDATION
+- Dataset: user-supplied filtered 13-column CSV, 384,721 rows, SHA-256 a4b796f9bd7a07f3881429bcc64165d0d03578a1b9f03a800eb4baebb0737a9a
+- Eight automated snapshot and calendar tests passed (python -m unittest discover -s tests -v).
+- Tested aggregate reconciliation: monthly-country vs monthly revenue and invoice counts; segments vs full sales total; cohort size equals observed customers.
+- HTML tested with headless Chromium via page.set_content: 0 JS page errors; country filter changed displayed sales; customer tab opened successfully. (The environment blocks localhost/file:// navigation, so inline page.set_content was used.)
+- PDF rendered and visually inspected: 4 pages.
+- Power BI: 2-page PBIP and JSON definitions generated; 38 JSON files parse correctly; Windows Desktop rendering and slicer behavior remain USER VALIDATION STEPS. Report imports embedded aggregate snapshots; do not mistake them for live source connections.
+- Original source CSV excluded from public-facing archive. Embedded and published project result data are aggregates plus customer-level de-identified metrics.

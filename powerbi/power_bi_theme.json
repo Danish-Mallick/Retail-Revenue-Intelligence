@@ -1,0 +1,31 @@
+{
+  "name": "RetailSignals",
+  "dataColors": [
+    "#64DECD",
+    "#FFB18E",
+    "#9FB2FF",
+    "#F18B9D"
+  ],
+  "foreground": "#F8FBFD",
+  "foregroundNeutralSecondary": "#AABFD0",
+  "background": "#0E1728",
+  "backgroundLight": "#192A40",
+  "tableAccent": "#64DECD",
+  "textClasses": {
+    "callout": {
+      "fontSize": 28,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#F8FBFD"
+    },
+    "title": {
+      "fontSize": 12,
+      "fontFace": "Segoe UI Semibold",
+      "color": "#F8FBFD"
+    },
+    "label": {
+      "fontSize": 11,
+      "fontFace": "Segoe UI",
+      "color": "#AABFD0"
+    }
+  }
+}

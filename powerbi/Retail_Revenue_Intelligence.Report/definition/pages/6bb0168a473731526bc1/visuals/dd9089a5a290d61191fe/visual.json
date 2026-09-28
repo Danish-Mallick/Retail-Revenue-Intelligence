@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "dd9089a5a290d61191fe",
+  "position": {
+    "x": 44,
+    "y": 54,
+    "width": 1200,
+    "height": 54,
+    "z": 1005,
+    "tabOrder": 1005
+  },
+  "visual": {
+    "visualType": "textbox",
+    "drillFilterOtherVisuals": false,
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Returning is not retention",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "30pt",
+                      "fontWeight": "bold",
+                      "color": "#F8FBFD"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "left"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# Keep third-party/user-supplied transactional data out of a public repository.
+data/raw/
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+*.pyc
+.DS_Store
