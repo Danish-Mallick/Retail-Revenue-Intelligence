@@ -1,5 +1,9 @@
 # Retail Signals: Why did sales rise when customers spent less per order?
 
+![Retail Signals editorial cover: monthly revenue chart drawn in Python](charts/Retail_Signals_Editorial_Cover.png)
+
+*The cover and additional charts below were plotted with Python and Seaborn from the project's verified result files. They are not AI-generated artwork or Power BI screenshots.*
+
 This project began with a question that a monthly revenue chart could not answer. Sales increased considerably in autumn 2011, but I wanted to understand whether customers were placing more orders, spending more on each order, or doing both. That question led me from transaction cleaning and sales analysis to customer retention and, eventually, a forecasting experiment comparing statistical methods with machine learning.
 
 I used **SQL and Python** for the investigation and built **interactive reports and an editable Power BI project** to explore the results. The data is a historical, filtered online-retail extract containing **384,721 transaction lines, 17,635 invoices and 4,261 identified customers**, covering **1 December 2010 to 9 December 2011** after correcting its dates.
@@ -38,7 +42,9 @@ This cleaning work mattered because it changed the dates used in every subsequen
 
 Once the dates were corrected, the monthly chart showed a rise towards the end of 2011. I compared **September and November** because both are complete months in this extract; December ends on the ninth day and would distort a full-month comparison.
 
-![Monthly recorded sales after correcting the transaction dates](charts/01_monthly_sales.png)
+![Monthly invoice counts and average order value, plotted with Seaborn](charts/12_invoices_vs_order_value_seaborn.png)
+
+*The two measures answer different questions. November had **2,553 invoices**, versus **1,669** in September; average order value fell from **£393.89 to £345.19** (currency assumed from source context). [View the full monthly revenue curve](charts/01_monthly_sales.png).*
 
 | Measure | September 2011 | November 2011 | Change |
 |---|---:|---:|---:|
@@ -60,15 +66,25 @@ That is a useful description of the existing customer base, but it is not a rete
 
 First, I calculated recency, frequency and monetary value (RFM) from each customer's recorded transactions. Under the project's documented, rule-based segmentation, the **Champions** group accounted for **54.8% of recorded sales**. The label is a way to describe observed purchasing behaviour; it is not a prediction of future loyalty or customer lifetime value.
 
+![Share of customers compared with share of recorded sales for each rule-based segment](charts/13_customer_concentration_seaborn.png)
+
+*This comparison adds useful context: the **Champions** category contains **17.6% of identified customers**, yet accounts for **54.8% of recorded sales**. These segment boundaries were defined for this analysis; they are not a validated churn model.*
+
 Second, I created monthly cohorts using each customer's **first appearance in this extract**. I then checked how many customers returned in later observed months. **36.2% of the December 2010 cohort** bought again the following month, whereas **21.3% of the January 2011 cohort** did so. These numbers make the difference between lifetime repeat purchasing and month-to-month return behaviour visible. They do not show when those people first became customers of the business.
 
-![Observed monthly customer-cohort retention](charts/04_cohort_retention.png)
+![Percentage returning the month after first appearing in the extract, by cohort](charts/14_next_month_return_seaborn.png)
+
+*For customers first observed in **December 2010**, **36.2%** appeared again the next month; the corresponding figure for **January 2011** was **21.3%**. [The complete month-by-month cohort matrix](charts/04_cohort_retention.png) shows what happened over longer follow-up periods.*
 
 [Explore the customer segments](charts/03_customer_segments.png) · [Review the cohort query](sql/03_customer_cohorts.sql) · [Inspect the segmentation rules](sql/04_rfm_segmentation.sql)
 
 ## 4. Did particular markets or products dominate the results?
 
 Before generalising the customer findings, I checked where recorded sales originated. The **United Kingdom contributed 84.4%** of the extract's sales value, so this is primarily a view of one national market rather than a balanced international sample. I also created a separate non-UK view so that smaller markets would remain visible without distorting the comparison.
+
+![Top markets when UK sales are excluded, plotted with Seaborn](charts/15_non_uk_market_mix_seaborn.png)
+
+*The UK accounts for **84.4%** of all recorded sales. Among sales **outside** the UK, Germany contributes **19.6%**, EIRE **17.9%** and France **16.7%**. Those percentages have a different denominator from the UK share.*
 
 I then compared products by recorded sales value and quantity sold. Those are different measures: selling many inexpensive units does not necessarily produce the highest revenue. **Regency Cakestand 3 Tier (stock code 22423)** generated the highest recorded product sales value, at **112,370.95** in assumed GBP.
 
@@ -106,7 +122,9 @@ I kept the **same five historical validation windows and the same final four-wee
 
 **Random Forest was the validation-selected model**, but it did not achieve the lowest error on the untouched final test. It recorded **15.70% WAPE**, compared with **13.37% for the damped trend**. XGBoost recorded **18.64%**. This is a comparison of observed outcomes, not a reason to go back and choose a different model using the test data.
 
-![Validation results compared with the final out-of-time test](charts/10_ml_validation_vs_test.png)
+![Earlier validation error versus final out-of-time error for all five forecasting methods](charts/16_forecast_validation_vs_test_seaborn.png)
+
+*The scatterplot shows why model selection and final evaluation must stay separate. **Random Forest** had **19.1% validation WAPE**, while the **damped trend** achieved **13.4% WAPE** on the final test. Each dot represents one forecasting method, not a separate test period.*
 
 This result changed how I would continue the project. The ML models learned from a larger product-level training panel, but the underlying dataset still contains only about **52 complete weeks**. It lacks promotion schedules and stock-availability records, and only one late-autumn period is available for the final test. I would gather more seasons and evaluate more forward periods before treating a small model difference as dependable.
 
@@ -129,7 +147,7 @@ With more data, my next investigations would be to separate the September–Nove
 | Historical statistical forecasting | [Forecasting notebook](notebooks/retail_demand_forecasting.ipynb) · [Forecasting dashboard](report/forecast_experiment.html) |
 | Machine-learning comparison | [ML notebook](notebooks/retail_ml_forecast_comparison.ipynb) · [Model comparison](report/ml_forecast_comparison.html) · [Validation results](results/ml_validation_folds.csv) |
 | Power BI | [Editable four-page Power BI project](powerbi/Retail_Revenue_Intelligence.pbip) · [Instructions for opening it](powerbi/OPEN_IN_DESKTOP.md) |
-| Verification | [Computed aggregate results](results/) · [Automated checks](tests/) |
+| Verification and figures | [Computed aggregate results](results/) · [Automated checks](tests/) · [Reproduce the Seaborn charts and cover](scripts/plot_editorial_story.py) |
 
 The original transactional CSV is **not redistributed** in this repository. The calculations were based on a user-supplied, 13-column positive-transaction extract with SHA-256:
 
@@ -139,4 +157,4 @@ Readers with that exact file can save it as `data/raw/Online Retail.csv` and fol
 
 **Interpretation limits:** The currency is assumed to be GBP based on the source context, not verified from a currency field. The file excludes the observations needed to measure returns and cancellations. A first-observed purchase is not necessarily a customer's first-ever purchase, and recorded quantities sold are not the same as total customer demand.
 
-The Power BI project was generated and structurally checked, but **it has not been opened and visually verified in Windows Power BI Desktop**. Its visual definitions are editable; the static promotional artwork is not presented as a screenshot of a deployed report.
+The Power BI project was generated and structurally checked, but **it has not been opened and visually verified in Windows Power BI Desktop**. Its visual definitions are editable. The editorial cover and additional figures were created with Python and Seaborn from the verified summary files and are **not Power BI screenshots**. Recreate them with `python scripts/plot_editorial_story.py` after installing the dependencies.
