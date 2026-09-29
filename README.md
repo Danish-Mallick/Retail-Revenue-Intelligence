@@ -1,162 +1,142 @@
-# Retail Signals: Sales grew. Were customers actually spending more?
+# Retail Signals: Why did sales rise when customers spent less per order?
 
-![Sales decomposition dashboard — verified data preview](charts/LinkedIn_Featured_Sales.png)
+This project began with a question that a monthly revenue chart could not answer. Sales increased considerably in autumn 2011, but I wanted to understand whether customers were placing more orders, spending more on each order, or doing both. That question led me from transaction cleaning and sales analysis to customer retention and, eventually, a forecasting experiment comparing statistical methods with machine learning.
 
-*This is a **dashboard design preview**, not a screenshot of a published Power BI report. The figures are from the actual analysis.*
+I used **SQL and Python** for the investigation and built **interactive reports and an editable Power BI project** to explore the results. The data is a historical, filtered online-retail extract containing **384,721 transaction lines, 17,635 invoices and 4,261 identified customers**, covering **1 December 2010 to 9 December 2011** after correcting its dates.
 
-**SQL · Python · Power BI** &nbsp; | &nbsp; **384,721 recorded line items** &nbsp; | &nbsp; **Dec 2010 – 9 Dec 2011**
+**The central finding:** Between September and November 2011, recorded sales rose by **34.1%**. The number of invoices increased by **53.0%**, while average order value **fell by 12.4%**. In this period, growth came from more orders, not larger baskets.
 
-[Explore the sales/customer dashboard](report/interactive_dashboard.html) · [Explore the forecasting dashboard](report/forecast_experiment.html) · [Read the four-page field report](report/executive_field_report.pdf) · [Open the executed notebook](notebooks/retail_investigation.ipynb) · [Inspect the SQL](sql/) · [Open the Power BI setup guide](powerbi/OPEN_IN_DESKTOP.md)
+[Explore the interactive sales and customer dashboard](report/interactive_dashboard.html) · [Read the sales and customer report](report/executive_field_report.pdf) · [Examine the forecasting comparison](report/ml_forecast_comparison.html) · [Open the Power BI project](powerbi/OPEN_IN_DESKTOP.md)
 
-## Where I started
+## How the investigation developed
 
-At first, this looked like a fairly standard sales dataset: invoices, prices, quantities, customers, products and countries. Plot monthly revenue, list the most valuable products, build a dashboard. I could have stopped there, but a revenue curve doesn't explain *what changed*.
+| Question I investigated | Answer from this dataset |
+|---|---|
+| Did autumn revenue increase because customers spent more per order? | No. September–November sales increased by **34.1%**, but average order value decreased by **12.4%**. The number of invoices rose by **53.0%**. |
+| How important were customers who purchased more than once? | **2,773 of 4,261** observed customers placed at least two invoices. They generated **92.1%** of recorded sales across the extract. |
+| Did customers continue buying after their first observed purchase? | **36.2%** of the December 2010 cohort purchased again the following month, compared with **21.3%** of the January 2011 cohort. |
+| Were sales spread evenly across markets? | No. The United Kingdom accounted for **84.4%** of recorded sales value. |
+| Could forecasting methods anticipate the late-autumn volume? | The validation-selected **Random Forest** recorded **15.7% error** on the final four-week test. An eight-week damped trend achieved **13.4%** on that same test, although it was not the validation-selected model in the five-method comparison. |
 
-The autumn numbers gave me a better question: **were people spending more per order, or were there simply more orders?** I followed that question first. Only after that did I look at who was buying, whether customers were returning, and whether the same story held outside the UK.
+These results describe **one historical transaction extract**. The file is filtered to positive quantities and prices, and its currency is not explicitly recorded. I use GBP as a source-context assumption, not as a field independently verified in the CSV.
 
-One thing interrupted the analysis before I got to the charts: the dates.
+---
 
-## 01 / The first problem wasn't revenue. It was the calendar.
+## 1. Could I trust the transaction dates?
 
-The first invoice (`536365`) is stored as `2010-01-12 08:26`. That suggests January 12, but the invoice sequence and the original retail observation window suggest **December 1**. I checked for other ambiguous dates rather than correcting just the first few rows.
+Before comparing sales over time, I checked whether the dates represented the right days and months. The first invoice, for example, appeared as **12 January 2010**, even though the invoice sequence and source observation window indicated **1 December 2010**. A time-series analysis built on the uncorrected dates would have been unreliable.
 
-There are **147,998 rows** where the day and month were swapped in this extract. That mattered: using the original dates produced **21 backward jumps** when I ordered invoices by number. Reversing the ambiguous day/month components eliminated those jumps and gave an observation window from **1 December 2010 to 9 December 2011**. Then I regenerated the month, year and weekday fields. The original precomputed calendar columns reflected the incorrect representation and weren't suitable for time-series analysis.
+I checked the date pattern across the entire file. **147,998 rows** needed their day and month reversed. In the original data, ordering invoices by number produced **21 backward jumps** in transaction dates. After repairing the ambiguous dates, that particular inconsistency disappeared. I then recalculated the calendar fields rather than using the year and month columns that came with the extract.
 
-I also found **5,178 exact duplicate rows**. I didn't automatically delete them. A single invoice can legitimately contain two identical product lines, and there's no line-item identifier here to distinguish that from a duplicate export. I left them in the main figures and calculated a sensitivity check: dropping repeated copies would reduce recorded sales by **23,119.37**, or approximately **0.38%**. That choice is documented in [the source and quality notes](data/SOURCE_AND_SCOPE.md) and [the SQL checks](sql/06_quality_and_sensitivity.sql).
+There was a second decision to make: **5,178 rows were exact duplicates**. I retained them in the main analysis because the extract has no unique invoice-line identifier; two identical lines might be legitimate purchases rather than an export error. To show the effect of that choice, I also calculated sales after removing repeated copies. Recorded sales would fall by **23,119.37**, approximately **0.38%** of the total.
 
-## 02 / The autumn jump: invoices grew faster than revenue
+This cleaning work mattered because it changed the dates used in every subsequent comparison. It also established which assumptions a reader would need to reproduce the results.
 
-![Monthly sales, January to November 2011](charts/01_monthly_sales.png)
+[See the date-repair SQL](sql/00_schema_and_date_repair.sql) · [Review the data-quality checks](sql/06_quality_and_sensitivity.sql) · [Read the source and scope notes](data/SOURCE_AND_SCOPE.md)
 
-After the date fix, the autumn increase is visible. Rather than using November as a single impressive KPI, I compared **September and November 2011**, both complete months in the extract:
+## 2. What actually explains the autumn sales increase?
 
-| Measure | September | November | Change |
-|:--|--:|--:|--:|
-| Recorded sales value* | 657,406 | 881,271 | **+34.1%** |
+Once the dates were corrected, the monthly chart showed a rise towards the end of 2011. I compared **September and November** because both are complete months in this extract; December ends on the ninth day and would distort a full-month comparison.
+
+![Monthly recorded sales after correcting the transaction dates](charts/01_monthly_sales.png)
+
+| Measure | September 2011 | November 2011 | Change |
+|---|---:|---:|---:|
+| Recorded sales value (assumed GBP) | £657,406 | £881,271 | **+34.1%** |
 | Distinct invoices | 1,669 | 2,553 | **+53.0%** |
-| Average order value* | 393.89 | 345.19 | **-12.4%** |
+| Average value per invoice | £393.89 | £345.19 | **−12.4%** |
 
-![Comparing invoice count and average order value](charts/02_orders_vs_aov.png)
+The distinction is important. Looking only at sales, I might have concluded that customers were spending more. The order figures show the opposite at the invoice level: **there were substantially more invoices, but each invoice was worth less on average**. The additional order volume more than offset the decrease in average order value.
 
-That changed how I described the increase. **Sales rose while the average invoice became smaller.** Arithmetically, the order-count increase more than accounts for the higher total, while the lower average order value partly offsets it. I cannot tell from these columns whether a campaign, pricing, seasonality or customer mix produced that change. The next step was to examine customer behaviour.
+The data does not explain *why* that happened. Prices, product mix, promotions, existing customers and newly observed customers could all have contributed. Rather than selecting an explanation without evidence, I moved to the customer data.
 
-**Timing caveat:** the uploaded file ends on **9 December 2011**. A chart that compares full November against partial December and calls the drop a demand collapse would be misleading.
+[See the invoice and order-value comparison](charts/02_orders_vs_aov.png) · [Reproduce the sales calculation in SQL](sql/01_revenue_decomposition.sql)
 
-## 03 / 'Repeat customer' is not one measure
+## 3. Were returning customers responsible for most recorded sales?
 
-One easy statistic stood out: **2,773 of 4,261 observed customers** placed at least two invoices. Together they account for **92.1% of recorded sales**.
+The next question was whether sales were concentrated among customers who bought repeatedly. Of the **4,261 identified customers**, **2,773** placed at least two distinct invoices during the observed period. Together, they contributed **92.1% of recorded sales**.
 
-But this is a *retrospective grouping*: I'm using all invoices in the file to decide who qualifies. It's not a retention rate, and it can't tell me whether a newly observed customer will buy again next month. I therefore separated two questions:
+That is a useful description of the existing customer base, but it is not a retention rate. It groups customers using everything we know about them at the *end* of the dataset. I therefore examined customer behaviour in two different ways.
 
-- **Who has been valuable across the whole observed window?** An end-of-window RFM-style grouping summarizes recency, distinct invoice count and sales value. My hand-set **Champions** group contributes **54.8%** of recorded sales. These are descriptive labels, not predictions of churn or lifetime value.
-- **What happens to a group in the months after it first appears?** The cohort calculation takes each customer's **first observed month in this extract** and checks for a purchase in each subsequent month. For the December 2010 cohort, **36.2%** reappeared in the next month; for the January 2011 cohort, **21.3%** did. These are not first-ever acquisition cohorts, and a later follow-up month can have a higher rate than the preceding month.
+First, I calculated recency, frequency and monetary value (RFM) from each customer's recorded transactions. Under the project's documented, rule-based segmentation, the **Champions** group accounted for **54.8% of recorded sales**. The label is a way to describe observed purchasing behaviour; it is not a prediction of future loyalty or customer lifetime value.
 
-![Rule-based segments and observed sales share](charts/03_customer_segments.png)
+Second, I created monthly cohorts using each customer's **first appearance in this extract**. I then checked how many customers returned in later observed months. **36.2% of the December 2010 cohort** bought again the following month, whereas **21.3% of the January 2011 cohort** did so. These numbers make the difference between lifetime repeat purchasing and month-to-month return behaviour visible. They do not show when those people first became customers of the business.
 
-![First-observed cohort retention matrix](charts/04_cohort_retention.png)
+![Observed monthly customer-cohort retention](charts/04_cohort_retention.png)
 
-I kept the two views separate in the dashboard because combining them into a single 'loyalty' KPI would hide the difference in how they're calculated. Details of the cohort denominator and RFM rules are in [the SQL](sql/03_customer_cohorts.sql) and [the methodology notes](data/SOURCE_AND_SCOPE.md).
+[Explore the customer segments](charts/03_customer_segments.png) · [Review the cohort query](sql/03_customer_cohorts.sql) · [Inspect the segmentation rules](sql/04_rfm_segmentation.sql)
 
-## 04 / Geography and products: supporting checks, not a new thesis
+## 4. Did particular markets or products dominate the results?
 
-**84.4% of recorded sales are attributed to the United Kingdom.** That concentration matters before treating a ranking of other countries as a global market comparison. I kept an *outside-the-UK* view to make the smaller markets visible without pretending they have the same scale.
+Before generalising the customer findings, I checked where recorded sales originated. The **United Kingdom contributed 84.4%** of the extract's sales value, so this is primarily a view of one national market rather than a balanced international sample. I also created a separate non-UK view so that smaller markets would remain visible without distorting the comparison.
 
-![Non-UK markets in the extract](charts/05_non_uk_markets.png)
+I then compared products by recorded sales value and quantity sold. Those are different measures: selling many inexpensive units does not necessarily produce the highest revenue. **Regency Cakestand 3 Tier (stock code 22423)** generated the highest recorded product sales value, at **112,370.95** in assumed GBP.
 
-I also checked product revenue against units sold. These are different rankings; a frequently purchased inexpensive item is not necessarily a leading revenue contributor. Product **22423 — Regency Cakestand 3 Tier** has the highest observed recorded revenue in this extract (**112,370.95**, assumed GBP). I use products to help contextualize sales mix rather than invent a margin story: this file has **no cost data**.
+These checks helped me understand the composition of sales, but I did not turn them into a profitability claim. The file contains selling prices, not the product costs required to calculate margins.
 
-![Products by recorded sales](charts/06_products.png)
+[View the non-UK market comparison](charts/05_non_uk_markets.png) · [View product sales](charts/06_products.png) · [See the SQL investigation](sql/05_products_and_geography.sql)
 
-## 05 / Could I have forecast the surge instead of explaining it afterwards?
+## 5. Could I have anticipated the late-autumn increase?
 
-The earlier charts showed a late-autumn increase, but I wanted to know whether that increase would have been visible **before** it happened. Forecasting revenue would mix order quantities with changing prices, so I changed the target to **weekly observed sold units**, both across all products and for five frequently purchased products. This distinction matters: this filtered dataset records what was sold, not customers' unmet demand when something was out of stock.
+Explaining a rise after it happens is different from predicting it. I wanted to test whether the sales history available *before November* contained enough information to forecast the next four weeks.
 
-![Four-week out-of-time forecast test](charts/07_demand_forecast_backtest.png)
+I forecast **weekly units sold**, not revenue, because price changes would complicate a forecast intended to capture sales volume. I started with three interpretable methods: a four-week moving average, repetition of the previous four weeks, and an eight-week damped trend. I evaluated all three over **five historical, four-week validation windows**, then kept **7 November to 4 December 2011** separate for the final test.
 
-Before trying machine learning, I wanted a benchmark I could explain and audit. There is only about one year of usable weekly history, with no inventory, promotions or reliable annual seasonality. I compared three reproducible approaches: a trailing four-week average, repeating the previous four weeks and a damped eight-week trend. I chose the method **before** looking at November, using five non-overlapping four-week rolling validation periods ending in mid-October. I also selected the five product codes from the early historical period so the future bestsellers couldn't choose themselves.
+In the original statistical-only experiment, the damped trend was selected from those three candidates. It forecast approximately **371,695 units** against **429,081 observed units**, giving **13.4% weighted absolute percentage error (WAPE)**. The simple four-week average recorded **15.2% WAPE**. The damped trend improved on that baseline, but it still underestimated recorded volume by about **57,386 units**.
 
-Then I left **7 November to 4 December 2011** untouched as a final four-week test. For total units, the selected damped trend predicted **371,695** against **429,081** actually recorded: **13.4% holdout WAPE**, versus **15.2%** for the basic four-week mean. That is only a modest improvement. The forecast still **underestimated the late-autumn increase**, which is more informative than presenting it as a successful prediction.
+I repeated the exercise for five relatively active products selected using only early purchasing history. Their outcomes varied, which was a useful warning against assuming that an improvement in the total-sales forecast would automatically hold for individual products.
 
-![SKU-level holdout error comparisons](charts/08_sku_forecast_validation.png)
+[See the four-week forecast and actual sales](charts/07_demand_forecast_backtest.png) · [Explore the forecasting report](report/forecast_experiment.html) · [Open the forecasting notebook](notebooks/retail_demand_forecasting.ipynb)
 
-The result wasn't consistent across products. Most selected the simple average during validation, and the selected trend model for the cake stand was slightly *worse* than the simple average on the final test. A single aggregate improvement would have hidden this. [The standalone forecast view](report/forecast_experiment.html) lets you switch between the aggregate and all five products. The [executed forecast notebook](notebooks/retail_demand_forecasting.ipynb), [forecast script](scripts/demand_forecast.py) and [rolling validation outputs](results/forecast_validation_folds.csv) show how I kept the test out of model selection.
+## 6. Would Random Forest or XGBoost improve the forecasts?
 
-This is a **historical forecasting experiment**, not a current retail prediction or a deployment-ready stock replenishment model. The data do not show stockouts, unmet demand, returns, advertising campaigns or a second complete holiday season. I therefore treated these statistical results as a benchmark for a separate ML experiment, rather than assuming a more sophisticated algorithm would perform better.
+After establishing a statistical benchmark, I tested two machine-learning alternatives: **Random Forest** and **XGBoost**. The main question was not whether I could train an ML model, but whether its predictions would be more accurate on data it had not seen.
 
-## 06 / I tried machine learning. The validation result and test result disagreed.
+To train the models, I combined weekly observations from **120 relatively active products** selected before the first validation window. The features included the previous eight weeks of sales, recent averages and variation, and calendar information available at forecast time. Each model predicted the four future weeks directly, rather than using actual future sales as inputs.
 
-The first forecast experiment left me with an obvious follow-up: **would Random Forest or XGBoost actually perform better, or would I just be adding complexity?** I kept the original five rolling validation windows, the same four-week November/December holdout and the same five evaluation products. That way the comparison couldn't benefit from an easier test.
+I kept the **same five historical validation windows and the same final four-week test** used in the statistical experiment. That made it possible to compare all five methods without changing the test to favour the ML models. I selected the model based on validation performance, not on its eventual November result.
 
-I trained both ML approaches on a shared panel of **120 relatively active products**, plus a separate all-product sales series. Crucially, I chose those training products using only early purchasing history, before the first validation window. Each training example includes the previous eight weeks of observed sales, recent averages and variation, and known calendar features; a forecast-horizon feature lets the model predict the next four weeks **directly**, without accidentally reading actual sales from one of those future weeks. I left their hyperparameters fixed rather than tuning against November.
+| Forecasting method | Validation WAPE | Final test WAPE |
+|---|---:|---:|
+| Four-week moving average | 20.37% | 15.18% |
+| Repeat the previous four weeks | 22.27% | 15.18% |
+| Eight-week damped trend | 19.65% | **13.37%** |
+| Random Forest | **19.08%** | 15.70% |
+| XGBoost | 19.48% | 18.64% |
 
-![Validation and test scores for five forecasting approaches](charts/10_ml_validation_vs_test.png)
+**Random Forest was the validation-selected model**, but it did not achieve the lowest error on the untouched final test. It recorded **15.70% WAPE**, compared with **13.37% for the damped trend**. XGBoost recorded **18.64%**. This is a comparison of observed outcomes, not a reason to go back and choose a different model using the test data.
 
-I expected the extra information to help. On the five earlier validation periods, **Random Forest was selected for total sales**: it scored **19.1% WAPE**, compared with **19.6% for the eight-week damped trend** and **19.5% for XGBoost**. That made Random Forest my preselected choice before looking at the final four weeks.
+![Validation results compared with the final out-of-time test](charts/10_ml_validation_vs_test.png)
 
-Then the final test changed the interpretation. Random Forest recorded **15.7% WAPE**, and XGBoost **18.6%**. The earlier statistical damped-trend method scored **13.4%** on the test. In other words, **the validation winner did not generalize best to this one test period**. It would be misleading to retrospectively call the damped trend the chosen model in the five-method experiment just because it had the lowest final-test error.
+This result changed how I would continue the project. The ML models learned from a larger product-level training panel, but the underlying dataset still contains only about **52 complete weeks**. It lacks promotion schedules and stock-availability records, and only one late-autumn period is available for the final test. I would gather more seasons and evaluate more forward periods before treating a small model difference as dependable.
 
-![Actual November sales versus four different forecasts](charts/09_ml_forecast_comparison.png)
+[Read the ML experiment](report/ml_forecast_comparison.html) · [Open its executed notebook](notebooks/retail_ml_forecast_comparison.ipynb) · [Inspect the model code](scripts/ml_forecast_comparison.py) · [Read the experimental methodology](docs/ml_methodology.md)
 
-I also checked the five original products instead of relying solely on the aggregate score. The earlier validation picked **XGBoost for one, Random Forest for two, and simple statistical methods for the remaining two**. The model that looked suitable in one period did not always hold up in another; some products behaved quite differently during November.
+## What I learned, and what I would check next
 
-![Product-level test outcomes after validation-based selection](charts/11_ml_product_holdout.png)
+The most useful sales finding was not that autumn revenue increased. It was that **invoice volume increased faster than sales while the average invoice became smaller**. Customer analysis showed how much recorded sales came from people who purchased more than once, but the limited observation window prevented me from interpreting that figure as future retention.
 
-That result is worth keeping. With approximately **52 complete weeks**, no promotion calendar and no stock availability, a more complex model can learn a pattern that doesn't carry over into another month. I would collect more seasons and test additional forward windows before interpreting small differences in WAPE as a dependable improvement. These are forecasts of **recorded units sold**, not proof that all customer demand has been captured.
+Forecasting raised a different lesson. More flexible methods did not automatically give better results: **the Random Forest model selected during validation was less accurate than the damped trend on the final aggregate test**. I would not use the November result to revise the original model selection; I would test both approaches over additional historical periods.
 
-[Explore the ML comparison](report/ml_forecast_comparison.html) · [Executed notebook](notebooks/retail_ml_forecast_comparison.ipynb) · [Training script](scripts/ml_forecast_comparison.py) · [Why the experiment was designed this way](docs/ml_methodology.md) · [Full validation output](results/ml_validation_folds.csv)
+With more data, my next investigations would be to separate the September–November increase by customer group and product mix, and to add promotions and stock availability to the forecasting models. Without product costs, returns and cancellation records, I also cannot make claims about profit, net sales or unmet demand.
 
-## What I would investigate next
+## Explore or reproduce the analysis
 
-I'd like to understand *which groups* contributed to the September–November order increase. The appropriate follow-up is a customer-month decomposition, preferably checking changes in product mix along the way. That's a better next question than extrapolating a full year's growth rate from this filtered, historical file.
+| Area | Files |
+|---|---|
+| SQL and data preparation | [PostgreSQL setup](sql/POSTGRES_SETUP.md) · [SQL investigations](sql/) · [Data-quality and scope notes](data/SOURCE_AND_SCOPE.md) |
+| Sales and customer analysis | [Executed notebook](notebooks/retail_investigation.ipynb) · [Interactive dashboard](report/interactive_dashboard.html) · [Four-page report](report/executive_field_report.pdf) |
+| Historical statistical forecasting | [Forecasting notebook](notebooks/retail_demand_forecasting.ipynb) · [Forecasting dashboard](report/forecast_experiment.html) |
+| Machine-learning comparison | [ML notebook](notebooks/retail_ml_forecast_comparison.ipynb) · [Model comparison](report/ml_forecast_comparison.html) · [Validation results](results/ml_validation_folds.csv) |
+| Power BI | [Editable four-page Power BI project](powerbi/Retail_Revenue_Intelligence.pbip) · [Instructions for opening it](powerbi/OPEN_IN_DESKTOP.md) |
+| Verification | [Computed aggregate results](results/) · [Automated checks](tests/) |
 
-I'd also want inventory availability and a promotion calendar before trusting a forecast for purchasing decisions, alongside return/cancellation data and a verified currency field before presenting profitability or net-sales conclusions. Those variables aren't available here.
-
-## Explore the work
-
-| If you want to... | Start here |
-|:--|:--|
-| Compare statistical forecasting with Random Forest and XGBoost | [ML experiment](report/ml_forecast_comparison.html) · [Executed ML notebook](notebooks/retail_ml_forecast_comparison.ipynb) · [5-fold validation output](results/ml_validation_folds.csv) |
-| Explore the original statistical forecast | [Historical forecasting dashboard](report/forecast_experiment.html) · [Forecast notebook](notebooks/retail_demand_forecasting.ipynb) |
-| See the main story and switch markets/time windows | [Interactive standalone dashboard](report/interactive_dashboard.html) — no server or CDN required |
-| Read the findings and data-quality decisions | [Four-page report](report/executive_field_report.pdf) |
-| Follow the reasoning and rerun the analysis | [Executed Python notebook](notebooks/retail_investigation.ipynb), then [`scripts/analyze.py`](scripts/analyze.py) |
-| Reproduce the SQL investigations | [PostgreSQL schema and date correction](sql/00_schema_and_date_repair.sql) · [SQL setup](sql/POSTGRES_SETUP.md) |
-| Inspect the editable Power BI report | [Four-page Power BI project](powerbi/Retail_Revenue_Intelligence.pbip) · [opening notes](powerbi/OPEN_IN_DESKTOP.md) |
-| Inspect the evidence behind the visuals | [Verified aggregate CSV results](results/) · [validation tests](tests/) |
-
-### Reproducing the numbers
-
-The repository contains **aggregated/anonymized result tables**, but **not** the original third-party transactional CSV. The exact user-supplied 13-column extract has SHA-256:
+The original transactional CSV is **not redistributed** in this repository. The calculations were based on a user-supplied, 13-column positive-transaction extract with SHA-256:
 
 `a4b796f9bd7a07f3881429bcc64165d0d03578a1b9f03a800eb4baebb0737a9a`
 
-With that exact file saved as `data/raw/Online Retail.csv` and the required Python libraries installed:
+Readers with that exact file can save it as `data/raw/Online Retail.csv` and follow the [repository setup instructions](GITHUB_PUBLISHING.md). The related [UCI Online Retail dataset](https://archive.ics.uci.edu/dataset/352/online+retail) should not be assumed to reproduce this filtered extract exactly.
 
-```bash
-pip install -r requirements.txt
-python scripts/analyze.py --source 'data/raw/Online Retail.csv'
-python scripts/plot_results.py
-python scripts/demand_forecast.py --source 'data/raw/Online Retail.csv'
-python scripts/plot_forecast.py
-python scripts/ml_forecast_comparison.py --source 'data/raw/Online Retail.csv'
-python scripts/plot_ml_comparison.py
-python scripts/build_ml_report.py
-python scripts/build_forecast_dashboard.py
-python scripts/build_featured_images.py
-python scripts/build_dashboard.py
-python scripts/build_report.py
-python scripts/build_powerbi.py
-python -m unittest discover -s tests -v
-```
+**Interpretation limits:** The currency is assumed to be GBP based on the source context, not verified from a currency field. The file excludes the observations needed to measure returns and cancellations. A first-observed purchase is not necessarily a customer's first-ever purchase, and recorded quantities sold are not the same as total customer demand.
 
-The notebooks and interactive HTML reports also open with **the already verified summary outputs**, even if you don't have the source file. The four-page Power BI PBIP uses embedded precomputed aggregate snapshots, so it can be opened offline; rerun the builder to refresh those after recomputing the analysis. **The PBIP was generated and structurally checked, but not opened or rendered in Windows Power BI Desktop.** The cover images are clearly labeled as previews, not evidence of deployed Power BI.
-
-### Boundaries worth keeping on the page
-
-- **Sample:** user-provided filtered extract of positive-quantity/positive-price transactions with customer IDs; *not* the original unfiltered UCI workbook and not representative of an entire customer base. It excludes records needed for a cancellation or return-rate analysis.
-- **Currency:** labeled **GBP as an explicit source-context assumption**. The provided CSV itself contains no currency column.
-- **Forecast boundaries:** the historical four-week November/December test is entirely out-of-time. Observed units sold are not true unconstrained demand; the filtered source lacks stock availability and multiple seasonal years. The ML training pool and the five reported SKUs are chosen solely from the initial history; model selection uses only earlier validation windows. RF won on validation but not the final aggregate test. ML hyperparameters were fixed, not exhaustively tuned.
-- **Customer history:** 'first observed' and end-of-window segments are limited to the available time period. Eight cross-country customers are assigned to their highest-sales country in the customer-level Power BI summary; the invoice-country sales summaries use each invoice's country.
-- **External reference:** the [UCI Online Retail dataset](https://archive.ics.uci.edu/dataset/352/online+retail) is related, but it is **not guaranteed to reproduce this uploaded derivative**. See [source and reuse notes](data/SOURCE_AND_SCOPE.md) before replacing or redistributing the original data.
-
-The output is descriptive analysis of a historical transaction extract. No causal or forward-looking business impact is claimed.
+The Power BI project was generated and structurally checked, but **it has not been opened and visually verified in Windows Power BI Desktop**. Its visual definitions are editable; the static promotional artwork is not presented as a screenshot of a deployed report.
