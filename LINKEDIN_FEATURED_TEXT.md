@@ -22,3 +22,12 @@ The next step was customer behaviour. I separated the retrospective contribution
 I added a forecasting experiment after finishing the revenue and customer analysis. I tested whether weekly recorded units could have predicted the late-autumn surge, using five earlier rolling windows to select among simple methods before evaluating an untouched four-week November–December 2011 period. The selected aggregate method recorded 13.4% historical WAPE versus 15.2% for a trailing-average baseline, but both underestimated the seasonal rise. SKU-level results were mixed. This is an honest historical backtest using sales as a proxy for demand, not a live demand-forecasting system.
 
 Artwork: `charts/07_demand_forecast_backtest.png`
+
+
+## Optional update after running the forecasting comparison
+
+If you mention forecasting in the LinkedIn project, a defensible version is:
+
+> I extended the sales investigation by comparing three statistical forecasting rules with Random Forest and XGBoost. I kept the same five historical validation windows and a separate four-week holdout so I could check whether the extra complexity actually helped. Random Forest had the lowest aggregate validation error (19.1% WAPE), but the simpler damped trend produced a lower error on the final holdout (13.4% versus 15.7% for the selected RF). The result made me more cautious about treating a single model's validation performance as proof it will generalize.
+
+Do not imply the dashboard image itself is a deployed Power BI screenshot. The ML experiment is in `report/ml_forecast_comparison.html`, and full code is in `scripts/ml_forecast_comparison.py`.

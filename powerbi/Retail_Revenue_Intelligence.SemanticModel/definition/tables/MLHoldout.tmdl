@@ -1,0 +1,71 @@
+table MLHoldout
+	lineageTag: 9d564d5a-d951-49f8-b34b-83e12f58c5a9
+
+	column WeekStart
+		dataType: string
+		lineageTag: c6c10971-7d26-44cb-8cb8-8908da434dc2
+		summarizeBy: none
+		sourceColumn: WeekStart
+
+	column ActualUnits
+		dataType: double
+		lineageTag: 7f1d8d5e-73e0-4ec2-a5cd-2b6ceb30f9fb
+		summarizeBy: sum
+		sourceColumn: ActualUnits
+
+	column MeanForecast
+		dataType: double
+		lineageTag: a186abfa-1ffa-4f2c-97bf-19ff4388fa0c
+		summarizeBy: sum
+		sourceColumn: MeanForecast
+
+	column DampedForecast
+		dataType: double
+		lineageTag: d8361fef-2def-4ab0-a408-0fc78afa377d
+		summarizeBy: sum
+		sourceColumn: DampedForecast
+
+	column RandomForestForecast
+		dataType: double
+		lineageTag: 4d246f68-939d-43b1-8ba4-6e4437dc3541
+		summarizeBy: sum
+		sourceColumn: RandomForestForecast
+
+	column XGBoostForecast
+		dataType: double
+		lineageTag: 1ab50906-4237-4962-acf1-428160cdc702
+		summarizeBy: sum
+		sourceColumn: XGBoostForecast
+
+	measure 'ML Actual Units' = SUM(MLHoldout[ActualUnits])
+		lineageTag: decf7d6b-c975-44d8-867a-6653d3ab51ac
+		formatString: #,0
+
+	measure 'ML RF Forecast' = SUM(MLHoldout[RandomForestForecast])
+		lineageTag: 61d6ed48-6c3d-482b-9dfe-86566477c871
+		formatString: #,0
+
+	measure 'ML Damped Forecast' = SUM(MLHoldout[DampedForecast])
+		lineageTag: f017b61b-754b-4cc1-9e88-33e004750393
+		formatString: #,0
+
+	measure 'ML XGBoost Forecast' = SUM(MLHoldout[XGBoostForecast])
+		lineageTag: cf6ca8c8-9093-4017-9848-844cc2d901d7
+		formatString: #,0
+
+	measure 'ML Moving Average' = SUM(MLHoldout[MeanForecast])
+		lineageTag: 2aefaa26-7567-4941-8a42-35ba8f94cbc8
+		formatString: #,0
+
+	partition MLHoldout = m
+		mode: import
+		source =
+				let
+				    Contents = Binary.Decompress(Binary.FromText("H4sIAAAAAAAC/33MMQ7CMAwF0L1nCZbtxMQZQQgmFhCCNWozIKBFNNyfsLSlA5YH/y89n1O6HXN8ZbOq8zveT+0192afYrvtXqmOfTab+HimZoiH2Dbd4xv7PJSX3brrxlwxEi3KojdEZNEBogkYVEDKwagMTKVx7EG8Uc+OIdAAyRXoysygDwKof2D5Ssgi+Asti4JzU0iqYHWEWiB6tTMoEmDJU+jIAtnqA7TiDk47AQAA", BinaryEncoding.Base64), Compression.GZip),
+				    CSV = Csv.Document(Contents,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(CSV,[PromoteAllScalars=true]),
+				    Typed = Table.TransformColumnTypes(Headers, {{"WeekStart", type text},{"ActualUnits", type number},{"MeanForecast", type number},{"DampedForecast", type number},{"RandomForestForecast", type number},{"XGBoostForecast", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

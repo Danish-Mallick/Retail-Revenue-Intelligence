@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.7.0/schema.json",
+  "name": "c72a1222ecf92184edcd",
+  "position": {
+    "x": 44,
+    "y": 734,
+    "width": 1330,
+    "height": 104,
+    "z": 1059,
+    "tabOrder": 1059
+  },
+  "visual": {
+    "visualType": "textbox",
+    "drillFilterOtherVisuals": false,
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Random Forest (19.1%) was chosen by five earlier validation windows but its test error was 15.7%; the damped trend scored 13.4% on this one final test. Test scores are diagnostics, not retrospective model selection. A year of recorded sales is not sufficient for production demand planning.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "fontWeight": "normal",
+                      "color": "#AABFD0"
+                    }
+                  }
+                ],
+                "horizontalTextAlignment": "left"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

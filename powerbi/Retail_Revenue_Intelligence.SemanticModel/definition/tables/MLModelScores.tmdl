@@ -1,0 +1,63 @@
+table MLModelScores
+	lineageTag: a73e7b40-bc28-42b9-b573-06eaa181256c
+
+	column Method
+		dataType: string
+		lineageTag: 85229ad5-6fb5-474b-8e19-06150f6f1197
+		summarizeBy: none
+		sourceColumn: Method
+
+	column ValidationWAPE
+		dataType: double
+		lineageTag: 9bd140a2-f4f6-4db1-9d45-9dc7a1cb4a4c
+		summarizeBy: sum
+		sourceColumn: ValidationWAPE
+
+	column HoldoutWAPE
+		dataType: double
+		lineageTag: 3bdf1454-710e-463f-81b0-8cd0654de6ec
+		summarizeBy: sum
+		sourceColumn: HoldoutWAPE
+
+	column SelectedByValidation
+		dataType: string
+		lineageTag: e5d4e93a-6e18-4190-b27c-7616150c8ff8
+		summarizeBy: none
+		sourceColumn: SelectedByValidation
+
+	measure 'ML Validation WAPE' = DIVIDE(AVERAGE(MLModelScores[ValidationWAPE]),100)
+		lineageTag: e3a33803-1a0f-467d-a28a-a4c456cb1e9c
+		formatString: 0.0%
+
+	measure 'ML Holdout WAPE' = DIVIDE(AVERAGE(MLModelScores[HoldoutWAPE]),100)
+		lineageTag: 8b720f1b-3fc7-4363-bacd-69a90250794c
+		formatString: 0.0%
+
+	measure 'RF Validation WAPE' = CALCULATE([ML Validation WAPE],MLModelScores[Method]="random_forest")
+		lineageTag: f159de89-10c3-4451-af8e-7d1dbad79783
+		formatString: 0.0%
+
+	measure 'RF Holdout WAPE' = CALCULATE([ML Holdout WAPE],MLModelScores[Method]="random_forest")
+		lineageTag: f71ff88c-f2d9-422a-8228-7235151045a7
+		formatString: 0.0%
+
+	measure 'Damped Holdout WAPE' = CALCULATE([ML Holdout WAPE],MLModelScores[Method]="eight_week_damped_trend")
+		lineageTag: 5544af93-3685-4ede-bdaa-dc3be315b708
+		formatString: 0.0%
+
+	measure 'Baseline Holdout WAPE' = CALCULATE([ML Holdout WAPE],MLModelScores[Method]="four_week_mean")
+		lineageTag: 571f12f3-5851-421a-86bf-a4a3f3aa454a
+		formatString: 0.0%
+
+	partition MLModelScores = m
+		mode: import
+		source =
+				let
+				    Contents = Binary.Decompress(Binary.FromText("H4sIAAAAAAAC/02MywrCMBBF9/2WITSxL5cKghtFEBRXIZrpA9tMSaeof29jF3Z3uefce0CuycLFtI013JC7bk472FNraeRfPmOLD0a7/fylqKTR6xfiU3doHKhYrHKQqZAFHGlBPfZoGJQSasGxqWqeBWu6Hq1mj86CXIssBbkKZ5PmjbPU6ZI8DhxgXISPPIYbDtG7uhPNfTL1hciSMPoC3xDcTtEAAAA=", BinaryEncoding.Base64), Compression.GZip),
+				    CSV = Csv.Document(Contents,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Headers = Table.PromoteHeaders(CSV,[PromoteAllScalars=true]),
+				    Typed = Table.TransformColumnTypes(Headers, {{"Method", type text},{"ValidationWAPE", type number},{"HoldoutWAPE", type number},{"SelectedByValidation", type text}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table

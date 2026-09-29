@@ -54,3 +54,36 @@ Simple Holdout WAPE = DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes
 
 -- ForecastSkuErrors / Selected SKU WAPE
 Selected SKU WAPE = SUM(ForecastSkuErrors[HoldoutWAPE])
+
+-- MLModelScores / ML Validation WAPE
+ML Validation WAPE = DIVIDE(AVERAGE(MLModelScores[ValidationWAPE]),100)
+
+-- MLModelScores / ML Holdout WAPE
+ML Holdout WAPE = DIVIDE(AVERAGE(MLModelScores[HoldoutWAPE]),100)
+
+-- MLModelScores / RF Validation WAPE
+RF Validation WAPE = CALCULATE([ML Validation WAPE],MLModelScores[Method]="random_forest")
+
+-- MLModelScores / RF Holdout WAPE
+RF Holdout WAPE = CALCULATE([ML Holdout WAPE],MLModelScores[Method]="random_forest")
+
+-- MLModelScores / Damped Holdout WAPE
+Damped Holdout WAPE = CALCULATE([ML Holdout WAPE],MLModelScores[Method]="eight_week_damped_trend")
+
+-- MLModelScores / Baseline Holdout WAPE
+Baseline Holdout WAPE = CALCULATE([ML Holdout WAPE],MLModelScores[Method]="four_week_mean")
+
+-- MLHoldout / ML Actual Units
+ML Actual Units = SUM(MLHoldout[ActualUnits])
+
+-- MLHoldout / ML RF Forecast
+ML RF Forecast = SUM(MLHoldout[RandomForestForecast])
+
+-- MLHoldout / ML Damped Forecast
+ML Damped Forecast = SUM(MLHoldout[DampedForecast])
+
+-- MLHoldout / ML XGBoost Forecast
+ML XGBoost Forecast = SUM(MLHoldout[XGBoostForecast])
+
+-- MLHoldout / ML Moving Average
+ML Moving Average = SUM(MLHoldout[MeanForecast])

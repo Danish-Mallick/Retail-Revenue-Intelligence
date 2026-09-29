@@ -8,5 +8,7 @@ ref table Customers
 ref table CohortMonth1
 ref table ForecastAll
 ref table ForecastSkuErrors
+ref table MLModelScores
+ref table MLHoldout
 
 annotation __PBI_TimeIntelligenceEnabled = 0

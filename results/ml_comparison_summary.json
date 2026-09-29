@@ -1,0 +1,101 @@
+{
+  "experiment": "Fixed-parameter pooled Random Forest and XGBoost vs three pre-existing statistical methods",
+  "note": "Comparisons use historical, filtered observed unit sales\u2014not true latent demand.",
+  "training_pool": "Top 120 SKUs by distinct invoices from data strictly before 2011-05-30; >=12 active early weeks. Includes all-products as separate series.",
+  "pool_size": 120,
+  "target": "dimensionless units / mean(previous 8 weekly units)",
+  "features": [
+    "horizon",
+    "lag_1_ratio",
+    "lag_2_ratio",
+    "lag_3_ratio",
+    "lag_4_ratio",
+    "lag_5_ratio",
+    "lag_6_ratio",
+    "lag_7_ratio",
+    "lag_8_ratio",
+    "mean_4_ratio",
+    "mean_8_ratio",
+    "std_4_ratio",
+    "std_8_ratio",
+    "recent_vs_prior_4",
+    "positive_weeks_4",
+    "positive_weeks_8",
+    "log_recent_scale",
+    "log_mean_8",
+    "target_week_of_year",
+    "target_month",
+    "is_all_products"
+  ],
+  "algorithms": {
+    "random_forest": "140 trees, depth 9, min leaf 6, max_features .8, fixed seed 42",
+    "xgboost": "170 trees, depth 4, learning_rate .055, reg_lambda 12, subsample .9, colsample .85, fixed seed 42"
+  },
+  "forecast_strategy": "Direct horizon-aware four-week forecasts; only lagged data available at each origin, no actual holdout sales as features.",
+  "validation_origins": [
+    "2011-05-30",
+    "2011-06-27",
+    "2011-07-25",
+    "2011-08-22",
+    "2011-09-19"
+  ],
+  "test_origin": "2011-11-07",
+  "test_end_inclusive": "2011-12-04",
+  "sku_selection": "Same original five top SKUs, chosen strictly before first validation; do not choose based on test.",
+  "sku_list": [
+    "85123A",
+    "22423",
+    "47566",
+    "84879",
+    "85099B"
+  ],
+  "selection_rule": "Lowest pooled absolute error / pooled actual units across five four-week validation folds per series. Same candidate pool for all six series. Preset ML hyperparameters, no holdout tuning.",
+  "selected_aggregate_method": "random_forest",
+  "selected_aggregate_holdout_wape": 15.701,
+  "four_week_mean_holdout_wape": 15.181,
+  "all_product_comparison": [
+    {
+      "Method": "four_week_mean",
+      "ValidationWAPE": 20.373700554839253,
+      "HoldoutWAPE": 15.181049731868807,
+      "ForecastTotal": 363942.0,
+      "SelectedByValidation": false
+    },
+    {
+      "Method": "four_week_repeat",
+      "ValidationWAPE": 22.266196814440686,
+      "HoldoutWAPE": 15.181049731868807,
+      "ForecastTotal": 363942.0,
+      "SelectedByValidation": false
+    },
+    {
+      "Method": "eight_week_damped_trend",
+      "ValidationWAPE": 19.647848436100187,
+      "HoldoutWAPE": 13.37408412215583,
+      "ForecastTotal": 371695.3461078125,
+      "SelectedByValidation": false
+    },
+    {
+      "Method": "random_forest",
+      "ValidationWAPE": 19.0790978202636,
+      "HoldoutWAPE": 15.701169130918723,
+      "ForecastTotal": 361710.26648136263,
+      "SelectedByValidation": true
+    },
+    {
+      "Method": "xgboost",
+      "ValidationWAPE": 19.481110566337854,
+      "HoldoutWAPE": 18.643022102964252,
+      "ForecastTotal": 349087.33433037996,
+      "SelectedByValidation": false
+    }
+  ],
+  "limitations": [
+    "Only 52 complete weeks; one holiday season, no reliable annual seasonality.",
+    "Data lacks stockouts, lost sales and promotions. Forecasted positive units sold are only an observed-sales proxy.",
+    "SKUs were selected using early-history frequency; evaluation is for relatively active products, not all products.",
+    "Pooled SKU panel shares the same calendar and is not independent customer data.",
+    "No hyperparameter search; deeper ML tuning might produce different results, but must stay within historical folds.",
+    "Reported performance is a single historical holdout, not proof of future reliability."
+  ]
+}

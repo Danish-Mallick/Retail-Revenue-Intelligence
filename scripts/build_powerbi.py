@@ -1,4 +1,4 @@
-"""Generate 3-page portable Power BI Project (.pbip) with embedded aggregate CSVs.
+"""Generate 4-page portable Power BI Project (.pbip) with embedded aggregate CSVs.
 
 Trade-off: precomputed anonymized summary sources embedded as compressed CSV so
 Power BI Desktop can import offline; rerun this script to refresh after analysis.
@@ -20,6 +20,18 @@ hold=pd.read_csv(D/'forecast_holdout_weeks.csv').query('Series == "All products"
 forecast=forecast.merge(hold[['WeekStart','ForecastUnits','BaselineUnits']],on='WeekStart',how='left')
 forecast['IsHoldout']=['Yes' if date in set(hold.WeekStart) else 'No' for date in forecast.WeekStart]
 sku_errors=pd.read_csv(D/'forecast_evaluation.csv').query('Series != "All products"')
+# Separate ML experiment, independently selected on five earlier validation folds.
+mlscores=pd.read_csv(D/'ml_holdout_comparison.csv').query('Series == "All products"')[
+    ['Method','ValidationWAPE','HoldoutWAPE','SelectedByValidation']].copy()
+mlscores['SelectedByValidation']=mlscores['SelectedByValidation'].map({True:'Yes',False:'No'})
+mlweeks=pd.read_csv(D/'ml_holdout_weeks.csv').query('Series == "All products"')
+mlwide=(mlweeks.pivot(index='WeekStart',columns='Method',values='ForecastUnits')
+        .rename(columns={'four_week_mean':'MeanForecast','eight_week_damped_trend':'DampedForecast',
+                         'random_forest':'RandomForestForecast','xgboost':'XGBoostForecast'})
+        [['MeanForecast','DampedForecast','RandomForestForecast','XGBoostForecast']])
+mlactual=mlweeks.query('Method == "four_week_mean"').set_index('WeekStart')[['ActualUnits']]
+mlwide=mlactual.join(mlwide).reset_index()
+
 
 # Avoid implicit Python list syntax escaping in M. This file is fully portable
 # even without a local CSV; the user can regenerate from locally supplied data.
@@ -31,7 +43,9 @@ tables={
  'Customers':(customers,{'CustomerKey':'int64','Revenue':'double','Orders':'int64','FirstObservedMonth':'string','RecencyDays':'int64','Country':'string','Segment':'string'}),
  'CohortMonth1':(co,{'CohortMonth':'string','CustomersInCohort':'int64','CustomersNextMonth':'int64','NextMonthRetentionPct':'double'}),
  'ForecastAll':(forecast,{'WeekStart':'string','ObservedUnits':'int64','ForecastUnits':'double','BaselineUnits':'double','IsHoldout':'string'}),
- 'ForecastSkuErrors':(sku_errors,{'Series':'string','Product':'string','SelectedMethod':'string','HoldoutWAPE':'double','BaselineHoldoutWAPE':'double','ActualTotal':'int64','ForecastTotal':'double','BaselineForecastTotal':'double'})
+ 'ForecastSkuErrors':(sku_errors,{'Series':'string','Product':'string','SelectedMethod':'string','HoldoutWAPE':'double','BaselineHoldoutWAPE':'double','ActualTotal':'int64','ForecastTotal':'double','BaselineForecastTotal':'double'}),
+ 'MLModelScores':(mlscores,{'Method':'string','ValidationWAPE':'double','HoldoutWAPE':'double','SelectedByValidation':'string'}),
+ 'MLHoldout':(mlwide,{'WeekStart':'string','ActualUnits':'double','MeanForecast':'double','DampedForecast':'double','RandomForestForecast':'double','XGBoostForecast':'double'})
 }
 j(BASE/(NM+'.pbip'),{'$schema':P+'pbip/pbipProperties/1.0.0/schema.json','version':'1.0','artifacts':[{'report':{'path':NM+'.Report'}}],'settings':{'enableAutoRecovery':True}})
 j(RD/'.platform',plat('Report'));j(MD/'.platform',plat('SemanticModel'))
@@ -63,7 +77,22 @@ measures={
   'Selected Holdout Forecast':'SUM(ForecastAll[ForecastUnits])',
   'Selected Holdout WAPE':'DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[ForecastUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))',
   'Simple Holdout WAPE':'DIVIDE(SUMX(FILTER(ForecastAll,ForecastAll[IsHoldout]="Yes"),ABS(ForecastAll[ObservedUnits]-ForecastAll[BaselineUnits])),CALCULATE(SUM(ForecastAll[ObservedUnits]),ForecastAll[IsHoldout]="Yes"))'},
- 'ForecastSkuErrors':{'Selected SKU WAPE':'SUM(ForecastSkuErrors[HoldoutWAPE])'}
+ 'ForecastSkuErrors':{'Selected SKU WAPE':'SUM(ForecastSkuErrors[HoldoutWAPE])'},
+ 'MLModelScores':{
+   'ML Validation WAPE':'DIVIDE(AVERAGE(MLModelScores[ValidationWAPE]),100)',
+   'ML Holdout WAPE':'DIVIDE(AVERAGE(MLModelScores[HoldoutWAPE]),100)',
+   'RF Validation WAPE':'CALCULATE([ML Validation WAPE],MLModelScores[Method]="random_forest")',
+   'RF Holdout WAPE':'CALCULATE([ML Holdout WAPE],MLModelScores[Method]="random_forest")',
+   'Damped Holdout WAPE':'CALCULATE([ML Holdout WAPE],MLModelScores[Method]="eight_week_damped_trend")',
+   'Baseline Holdout WAPE':'CALCULATE([ML Holdout WAPE],MLModelScores[Method]="four_week_mean")',
+ },
+ 'MLHoldout':{
+   'ML Actual Units':'SUM(MLHoldout[ActualUnits])',
+   'ML RF Forecast':'SUM(MLHoldout[RandomForestForecast])',
+   'ML Damped Forecast':'SUM(MLHoldout[DampedForecast])',
+   'ML XGBoost Forecast':'SUM(MLHoldout[XGBoostForecast])',
+   'ML Moving Average':'SUM(MLHoldout[MeanForecast])',
+ }
 }
 fmt=lambda label:'0.0%' if 'Share' in label or 'Retention' in label or ' WAPE' in label else ('£#,0.00' if 'Value' in label else ('£#,0' if 'Sales' in label else '#,0'))
 for name,(df,types) in tables.items():
@@ -88,9 +117,9 @@ theme={'name':'RetailSignals','dataColors':[PA['teal'],PA['peach'],PA['blue'],PA
 j(BASE/'power_bi_theme.json',theme);j(RD/'StaticResources/SharedResources/BaseThemes/RetailSignals.json',theme)
 SC=P+'item/report/definition/';j(R/'version.json',{'$schema':SC+'versionMetadata/1.0.0/schema.json','version':'2.0.0'})
 j(R/'report.json',{'$schema':SC+'report/3.2.0/schema.json','themeCollection':{'baseTheme':{'name':'RetailSignals','reportVersionAtImport':{'visual':'2.6.0','report':'3.1.0','page':'2.3.0'},'type':'SharedResources'}},'resourcePackages':[{'name':'SharedResources','type':'SharedResources','items':[{'name':'RetailSignals','path':'BaseThemes/RetailSignals.json','type':'BaseTheme'}]}], 'settings':{'useStylableVisualContainerHeader':True,'exportDataMode':'AllowSummarized','defaultDrillFilterOtherVisuals':True}})
-ids=[gid('retail-page-'+s) for s in ['sales','customers','forecast']]
+ids=[gid('retail-page-'+s) for s in ['sales','customers','forecast','ml']]
 j(R/'pages/pages.json',{'$schema':SC+'pagesMetadata/1.0.0/schema.json','pageOrder':ids,'activePageName':ids[0]})
-for pg,label in zip(ids,['Sales and Markets','Customers and Cohorts','Demand Forecasting']):
+for pg,label in zip(ids,['Sales and Markets','Customers and Cohorts','Demand Forecasting','ML Model Comparison']):
  page_obj = {
    '$schema':SC+'page/2.1.0/schema.json', 'name':pg,
    'displayName':label, 'displayOption':'FitToPage', 'width':1440, 'height':900,
@@ -115,8 +144,8 @@ def add(pg,key,typ,x,y,w,h,roles=None,txt=None,size='13pt',title=None,color=None
   v['visualContainerObjects']={'background':[{'properties':{'show':lit('true'),'color':solid(PA['panel']),'transparency':lit('0D')}}],'visualHeader':[{'properties':{'show':lit('false')}}]}
   if title:v['visualContainerObjects']['title']=[{'properties':{'show':lit('true'),'text':lit("'"+title.replace("'","''")+"'"),'fontColor':solid(PA['white'])}}]
  j(R/f'pages/{pg}/visuals/{vid}/visual.json',{'$schema':SC+'visualContainer/2.7.0/schema.json','name':vid,'position':{'x':x,'y':y,'width':w,'height':h,'z':1000+count,'tabOrder':1000+count},'visual':v})
-a,b,c=ids
-for pg,eyebrow,title,subtitle in [(a,'SALES INTELLIGENCE / 01','More orders, not bigger baskets','Recorded sales and invoices  ·  historical filtered extract  ·  assumed GBP'),(b,'CUSTOMER INTELLIGENCE / 02','Returning is not retention','Rule-based segments and first-observed monthly cohorts  ·  filtered extract'),(c,'DEMAND EXPERIMENT / 03','Can a simple forecast anticipate the surge?','Historical 4-week backtest   ·   positive sold units are not unconstrained demand')]:
+a,b,c,d=ids
+for pg,eyebrow,title,subtitle in [(a,'SALES INTELLIGENCE / 01','More orders, not bigger baskets','Recorded sales and invoices  ·  historical filtered extract  ·  assumed GBP'),(b,'CUSTOMER INTELLIGENCE / 02','Returning is not retention','Rule-based segments and first-observed monthly cohorts  ·  filtered extract'),(c,'DEMAND EXPERIMENT / 03','Can a simple forecast anticipate the surge?','Historical 4-week backtest   ·   positive sold units are not unconstrained demand'),(d,'ML COMPARISON / 04','Did machine learning actually help?','Random Forest + XGBoost vs statistical rules   ·   same earlier folds and final test')]:
  add(pg,'eyebrow','textbox',44,14,1100,28,txt=eyebrow,size='11pt',color=PA['teal'],title='x')
  add(pg,'title','textbox',44,54,1200,54,txt=title,size='30pt',title='x')
  add(pg,'subtitle','textbox',44,118,1270,35,txt=subtitle,size='11pt',color=PA['muted'])
@@ -146,15 +175,26 @@ for i,(label,met) in enumerate([('FINAL 4 WEEKS / ACTUAL','Actual Holdout Units'
 add(c,'forecast_history','lineChart',44,348,930,351,roles={'Category':[col('ForecastAll','WeekStart')],'Y':[measure('ForecastAll','Weekly Observed Units'),measure('ForecastAll','Weekly Selected Forecast'),measure('ForecastAll','Weekly Baseline Forecast')]},title='Weekly sold units · historical and final holdout')
 add(c,'sku_error','barChart',995,349,398,350,roles={'Category':[col('ForecastSkuErrors','Series')],'Y':[measure('ForecastSkuErrors','Selected SKU WAPE')]},title='SKU forecast errors · holdout WAPE in %')
 add(c,'forecast_note','textbox',44,724,1330,104,txt='Forecasts were chosen with earlier rolling folds; final test is 7 Nov–4 Dec 2011. The model underpredicted late-autumn sales. Short historical sample, no stockout/promotions data and no out-of-sample live validation. Open report/forecast_experiment.html to compare models by product.',size='12pt',color=PA['muted'])
-readme='''# Power BI: open the editable 3-page PBIP
+# The fourth page compares the entire candidate pool on the *same* holdout.
+# The method chosen by validation is not retroactively replaced by the best test result.
+for i,(label,met) in enumerate([('RF VALIDATION WAPE','RF Validation WAPE'),('RF HOLDOUT WAPE','RF Holdout WAPE'),('DAMPED HOLDOUT WAPE','Damped Holdout WAPE'),('BASELINE HOLDOUT WAPE','Baseline Holdout WAPE')]):
+ x=44+i*347
+ add(d,'ml_label'+str(i),'textbox',x,171,299,28,txt=label,size='10pt',title='x',color=PA['muted'])
+ add(d,'ml_card'+str(i),'cardVisual',x,208,307,98,roles={'Data':[measure('MLModelScores',met)]})
+add(d,'ml_bars','columnChart',44,354,770,350,roles={'Category':[col('MLModelScores','Method')],
+ 'Y':[measure('MLModelScores','ML Validation WAPE'),measure('MLModelScores','ML Holdout WAPE')]},title='Validation versus untouched test  ·  WAPE')
+add(d,'ml_weekly','lineChart',837,354,555,350,roles={'Category':[col('MLHoldout','WeekStart')],
+ 'Y':[measure('MLHoldout','ML Actual Units'),measure('MLHoldout','ML RF Forecast'),measure('MLHoldout','ML Damped Forecast')]},title='Observed units versus RF and damped trend')
+add(d,'ml_note','textbox',44,734,1330,104,txt='Random Forest (19.1%) was chosen by five earlier validation windows but its test error was 15.7%; the damped trend scored 13.4% on this one final test. Test scores are diagnostics, not retrospective model selection. A year of recorded sales is not sufficient for production demand planning.',size='12pt',color=PA['muted'])
+readme='''# Power BI: open the editable 4-page PBIP
 
-Double-click **Retail_Revenue_Intelligence.pbip** with an up-to-date Power BI Desktop version supporting PBIP/TMDL. The project includes three pages: **Sales and Markets**, **Customers and Cohorts**, and **Demand Forecasting**.
+Double-click **Retail_Revenue_Intelligence.pbip** with an up-to-date Power BI Desktop version supporting PBIP/TMDL. The project includes four pages: **Sales and Markets**, **Customers and Cohorts**, **Demand Forecasting**, and **ML Model Comparison**.
 
-This report imports *compressed, embedded* precomputed CSV snapshots. It needs no access to your raw third-party retail CSV and does not depend on your local file paths. The snapshots come from the actual Python analysis in `results/` (sales by month/country, anonymized customer metrics, first-following-month cohort summary, and aggregate weekly forecast backtest). The forecasting page contains the *all-product* series; the separate forecast HTML explores five individual SKUs.
+This report imports *compressed, embedded* precomputed CSV snapshots. It needs no access to your raw third-party retail CSV and does not depend on your local file paths. The snapshots come from the actual Python analysis in `results/` (sales by month/country, anonymized customer metrics, first-following-month cohort summary, and aggregate weekly forecast backtest). The original forecasting page contains the statistical all-product series. The separate ML page compares Random Forest and XGBoost with the same statistical methods. Both pages use precomputed historical aggregate snapshots; the standalone ML HTML explores individual products.
 
-**To refresh** after updating the user-supplied raw extract, run `python scripts/analyze.py --source 'data/raw/Online Retail.csv'` then `python scripts/demand_forecast.py --source 'data/raw/Online Retail.csv'` and then `python scripts/build_powerbi.py`; reopen the PBIP. The snapshot tables are not live ETL connections. This is an editable Power BI project; I generated and structurally validated the definitions but did **not** open/verify them on Windows Power BI Desktop. In Desktop, verify visuals and filters before claiming it as an interactive deployed report or sharing screenshots.
+**To refresh** after updating the user-supplied raw extract, run `python scripts/analyze.py --source 'data/raw/Online Retail.csv'` then `python scripts/demand_forecast.py --source 'data/raw/Online Retail.csv'` and then `python scripts/ml_forecast_comparison.py --source 'data/raw/Online Retail.csv'` and `python scripts/build_powerbi.py`; reopen the PBIP. The snapshot tables are not live ETL connections. This is an editable Power BI project; I generated and structurally validated the definitions but did **not** open/verify them on Windows Power BI Desktop. In Desktop, verify visuals and filters before claiming it as an interactive deployed report or sharing screenshots.
 
-The customer page and cohort bar use separate precomputed tables. Customer country assigns the highest-sales country to the **eight cross-country customers**; the cohort chart is globally aggregated and unaffected by the customer-country slicer. Do not imply the slicer changes cohort retention. The source excludes cancellations and unknown customers, and excludes part of December 2011. On the forecasting page, selected WAPE and baseline WAPE are evaluated on a historical held-out four-week test only; this is not a 2026 operational prediction, and observed sold units are not total customer demand.
+The customer page and cohort bar use separate precomputed tables. Customer country assigns the highest-sales country to the **eight cross-country customers**; the cohort chart is globally aggregated and unaffected by the customer-country slicer. Do not imply the slicer changes cohort retention. The source excludes cancellations and unknown customers, and excludes part of December 2011. On both forecasting pages, WAPE values are evaluated on a historical held-out four-week test only; this is not a 2026 operational prediction, and observed sold units are not total customer demand.
 '''
 write(BASE/'OPEN_IN_DESKTOP.md',readme)
 print('PBIP generated:',len(list(R.rglob('visual.json'))),'visuals across',len(ids),'pages;',[(n,len(df)) for n,(df,types) in tables.items()])

@@ -8,3 +8,7 @@
 6. The cover image is a **design preview**. If you take an actual Power BI screenshot, label that separately after your Desktop review.
 
 The demand-forecasting addition is part of the same repository, not a separate project. Rebuild it with `python scripts/demand_forecast.py --source 'data/raw/Online Retail.csv'` then `python scripts/plot_forecast.py` and `python scripts/build_forecast_dashboard.py`. Rebuild the Power BI project with `python scripts/build_powerbi.py`; it now includes a third **Demand Forecasting** page, which still requires validation in Windows Power BI Desktop.
+
+
+### Additional ML comparison files
+The Random Forest and XGBoost extension is included in the same repository. `results/ml_holdout_comparison.csv`, `report/ml_forecast_comparison.html`, and charts `09`–`11` can be reviewed without the original transaction extract. Training again requires the exact filtered source and the extra requirements `scikit-learn` and `xgboost`. The Power BI project includes a fourth **ML Model Comparison** page with frozen verified aggregate snapshots; check the rendering locally in Desktop before using any screenshot as a published report.
