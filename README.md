@@ -1,5 +1,9 @@
 # Retail Signals: Why did sales rise when customers spent less per order?
 
+![Retail Signals: More orders, smaller baskets — charted with Python and Seaborn](charts/Retail_Signals_Cover_v2.png)
+
+*This cover uses verified monthly sales data from the project. December 2011 is excluded from the chart because the month is incomplete.*
+
 ![Retail Signals editorial cover: monthly revenue chart drawn in Python](charts/Retail_Signals_Editorial_Cover.png)
 
 *The cover and additional charts below were plotted with Python and Seaborn from the project's verified result files. They are not AI-generated artwork or Power BI screenshots.*
