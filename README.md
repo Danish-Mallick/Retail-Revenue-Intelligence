@@ -4,10 +4,6 @@
 
 *This cover uses verified monthly sales data from the project. December 2011 is excluded from the chart because the month is incomplete.*
 
-![Retail Signals editorial cover: monthly revenue chart drawn in Python](charts/Retail_Signals_Editorial_Cover.png)
-
-*The cover and additional charts below were plotted with Python and Seaborn from the project's verified result files. They are not AI-generated artwork or Power BI screenshots.*
-
 This project began with a question that a monthly revenue chart could not answer. Sales increased considerably in autumn 2011, but I wanted to understand whether customers were placing more orders, spending more on each order, or doing both. That question led me from transaction cleaning and sales analysis to customer retention and, eventually, a forecasting experiment comparing statistical methods with machine learning.
 
 I used **SQL and Python** for the investigation and built **interactive reports and an editable Power BI project** to explore the results. The data is a historical, filtered online-retail extract containing **384,721 transaction lines, 17,635 invoices and 4,261 identified customers**, covering **1 December 2010 to 9 December 2011** after correcting its dates.
